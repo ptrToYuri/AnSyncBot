@@ -48,16 +48,13 @@ chat.action('leave', async ctx => {
 chat.action('do-not-leave', ctx => ctx.deleteMessage().catch(e => e));
 
 chat.on('message', async ctx => {
-	const res = await answerTypes.find(el => el.name == ctx.session.interchange.answerType)
+	const interchange = ctx.session.interchange;
+
+	const res = await answerTypes.find(el => el.name == interchange.answerType)
 		.getResponse(ctx);
 	if (!res) return;
 
-	// POSSIBLE SECURITY ISSUE, FIX THAT LATER
-	await subscriptions.register(ctx.from.id, ctx.session.interchange._id, 'success');
-	//////////////////////////////////////////
-
-
-	const waitingForPartner = await interchanges.submitAnswer(ctx.session.interchange._id, {
+	const waitingForPartner = await interchanges.submitAnswer(interchange._id, {
 		userId: ctx.from.id,
 		userFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
 		messageId: ctx.message.message_id,
@@ -65,6 +62,7 @@ chat.on('message', async ctx => {
 	});
 	delete ctx.session.interchange;
 	if(waitingForPartner) await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
+	else ctx.session.kbLazyRemoveId = String(interchange._id);
 })
 
 module.exports = chat;

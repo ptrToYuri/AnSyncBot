@@ -23,7 +23,7 @@ async function getWithAnswers(id) {
 	return questions.findById(id).populate('answers');
 }
 
-async function submitAnswer(interchangeId, params) {
+async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 	const session = await mongoose.startSession();
 	console.log(`[INTCNG] Processing new answer for ${interchangeId}`);
 	try {
@@ -87,6 +87,10 @@ async function submitAnswer(interchangeId, params) {
 
 		let waitingForOthers = true;
 		if (String(qRes.answers[qRes.answers.length - 1]) == aRes.upsertedId) {
+			console.log(`[INTCNG] Answer reflected in base question data for ${interchangeId}`)
+			if (subscribeOnSuccess)
+				await subscriptions.register(params.userId, interchangeId, 'success');
+
 			switch (qRes.status) {
 				case 'pending':
 					subscriptions.process(interchangeId, 'progress', qRes)
@@ -102,7 +106,6 @@ async function submitAnswer(interchangeId, params) {
 			}
 		}
 		else throw new OpError('errors.alreadyEnded');
-		console.log(`[INTCNG] Answer reflected in base question data for ${interchangeId}`)
 		await session.commitTransaction();
 		session.endSession();
 		return waitingForOthers;

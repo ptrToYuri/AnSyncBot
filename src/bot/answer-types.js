@@ -3,6 +3,7 @@
 const { Markup } = require('telegraf');
 
 module.exports = [
+
 	{
 		name: 'verbose',
 		prompt: async (ctx, interchange) => {
@@ -18,20 +19,27 @@ module.exports = [
 			if (ctx.message.text) return ctx.message.text;
 			else await ctx.replyWithHTML(ctx.i18n.t('errors.notText'));
 		},
-		sendResultsFromPrivate: async (interchange, userId, bot, t) => {
+		sendResultsFromPrivate: async (interchange, userId, bot, t, shouldRemoveKb) => {
 			await bot.telegram.sendMessage(userId,
 				await t(userId, `answerTypes.${interchange.answerType}.resFromPrivate`, {
 					question: interchange.question.toUpperCase()
-				}), { parse_mode: 'HTML' });
+				}),
+				{
+					parse_mode: 'HTML',
+					...(shouldRemoveKb ? Markup.removeKeyboard() : {})
+				});
 			for (let ans of interchange.answers) {
 				await bot.telegram.forwardMessage(userId, ans.userId, ans.messageId)
 			}
 		}
 	},
+
 	{
 		name: 'score'
 	},
+
 	{
 		name: 'emoji'
 	}
+
 ]
