@@ -24,10 +24,12 @@ async function register(userId, interchangeId, updateNames) {
 		}, interchange id ${interchangeId}`)
 }
 
-async function process(interchangeId, updateName, optObj) {
-	console.log(`[SUBSCR] Processing update "${updateName}" for ${interchangeId}`);
+async function process(interchangeId, updateName, optObj = null, excludedUserIds = []) {
+	console.log(`[SUBSCR] Processing update "${updateName}" for ${interchangeId
+		}, excluded ${excludedUserIds.length ? excludedUserIds : 'none'}`);
 	const matches = (await subscriptions.find({ interchangeId: interchangeId }))
 		.filter(el => el.updates.includes(updateName))
+		.filter(el => !excludedUserIds.includes(el.userId))
 	if (matches.length)
 		events.emit(updateName,
 			{
@@ -40,4 +42,16 @@ async function process(interchangeId, updateName, optObj) {
 		)
 }
 
-module.exports = { register, process, events }
+async function deregisterExceptFor(interchangeId, excludedUserIds) {
+	await subscriptions.deleteMany({
+		interchangeId: interchangeId,
+		userId: { $nin: excludedUserIds }
+	});
+	console.log(`[SUBSCR] Removing all updates for ${interchangeId
+		} for users except ${excludedUserIds.length ? excludedUserIds : 'none'}`);
+}
+
+module.exports = {
+	register, process, deregisterExceptFor,
+	events
+}

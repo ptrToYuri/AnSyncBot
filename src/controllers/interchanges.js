@@ -60,10 +60,12 @@ async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 						},
 					},
 					...(params.isRefusal ? {
-						$cond: {
-							if: { $lt: ['$answersCount', '$maxParticipants'] },
-							then: { $add: ['$refusedCount', 1] },
-							else: '$refusedCount'
+						refusedCount: {
+							$cond: {
+								if: { $eq: ['$status', 'pending'] },
+								then: { $add: ['$refusedCount', 1] },
+								else: '$refusedCount'
+							}
 						}
 					} : {}),
 					status: {
@@ -93,10 +95,10 @@ async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 
 			switch (qRes.status) {
 				case 'pending':
-					subscriptions.process(interchangeId, 'progress', qRes)
+					subscriptions.process(interchangeId, 'progress', qRes, qRes.fromPrivate ? [params.userId] : [])
 					break;
 				case 'failure':
-					subscriptions.process(interchangeId, qRes.status, qRes)
+					subscriptions.process(interchangeId, qRes.status, qRes, qRes.fromPrivate ? [params.userId] : [])
 					waitingForOthers = false;
 					break;
 				case 'success':

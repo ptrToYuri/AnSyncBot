@@ -10,10 +10,10 @@ async function updateSession(id, obj) {
 	return sessions.updateOne({ key: `${id}:${id}` }, { data: obj });
 }
 
-async function t(id, key, extra = {}) {
+async function t(id, key, extra = {}, existingSession) {
 	let lang;
 	try {
-		lang = (await getSession(id)).__language_code;
+		lang = (existingSession || await getSession(id)).__language_code;
 	} catch (err) {
 		lang = i18n.config.defaultLanguage;
 	};
