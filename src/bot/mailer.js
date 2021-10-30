@@ -12,6 +12,7 @@ updates.on('success', async upd => {
 	let failedIds = [];
 	if (upd.interchange.fromPrivate) {
 		for (let userId of upd.userIds) {
+			console.log(`[MAILER] Notifying user ${userId} about success of ${upd.interchange._id}`)
 			try {
 				await answerTypes.find(el => el.name == upd.interchange.answerType)
 					.sendResultsFromPrivate(
@@ -22,7 +23,7 @@ updates.on('success', async upd => {
 						((await sessionNoCtx.getSession(userId))?.kbLazyRemoveId == String(upd.interchange._id)))
 			} catch (err) {
 				failedIds.push(userId);
-				console.log(`[MAILER] Failed to report results: ${err.message}`)
+				console.log(`[MAILER] Failed to report results: ${err.message}. Queued user ${userId}`)
 			}
 		}
 	}
@@ -32,6 +33,7 @@ updates.on('success', async upd => {
 
 updates.on('progress', async upd => {
 	if (upd.interchange.fromPrivate) {
+		console.log(`[MAILER] Notifying user ${upd.userIds[0]} about progress of ${upd.interchange._id}`)
 		await bot.telegram.sendMessage(
 			upd.userIds[0],
 			await sessionNoCtx.t(upd.userIds[0], 'withBot.partnerAnswered'),
@@ -43,6 +45,7 @@ updates.on('progress', async upd => {
 updates.on('failure', async upd => {
 	let failedToReportIds = [];
 	if (upd.interchange.fromPrivate) {
+		console.log(`[MAILER] Notifying user ${upd.userIds[0]} about failure of ${upd.interchange._id}`)
 		try {
 			const session = await sessionNoCtx.getSession(upd.userIds[0]);
 			await bot.telegram.sendMessage(
@@ -58,7 +61,7 @@ updates.on('failure', async upd => {
 			await sessionNoCtx.updateSession(upd.userIds[0], session);
 		} catch (err) {
 			failedToReportIds.push(upd.userIds[0]);
-			console.log(`[MAILER] Failed to report results: ${err.message}`)
+			console.log(`[MAILER] Failed to report results: ${err.message}. Queued user ${upd.userIds[0]}`)
 		}
 	}
 	await subscriptions.deregisterExceptFor(upd.interchange._id, failedToReportIds)
