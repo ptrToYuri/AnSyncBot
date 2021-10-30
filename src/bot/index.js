@@ -18,17 +18,17 @@ async function launch() {
 }
 
 bot.catch(async (err, ctx) => {
-	if (err.category == 'operational')
-		if (ctx.chat?.type && !ctx.inlineQuery) {
+	if (err.category == 'operational') {
+		if (ctx.chat?.type && !ctx.inlineQuery)
 			await ctx.replyWithHTML(ctx.i18n.t(err.message, err.args))
 				.catch(err => console.log(`[BOT] Failed to report operror: ${err.message}`));
-				console.log(`[OPERROR] ${err.message}`);
-		}
-		else {
-			await ctx.replyWithHTML(ctx.i18n.t('errors.somethingWentWrong'))
-				.catch(err => console.log(`[BOT] Failed to report code error: ${err.message}`));
-			console.log(err.stack);
-		}
+		console.log(`[OPERROR] ${err.message}`);
+	}
+	else {
+		console.log(err.stack);
+		await ctx.replyWithHTML(ctx.i18n.t('errors.somethingWentWrong'))
+			.catch(err => console.log(`[BOT] Failed to report code error: ${err.message}`));
+	}
 })
 
 const router = require('./middlewares/router');
