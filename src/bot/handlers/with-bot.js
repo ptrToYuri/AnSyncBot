@@ -81,4 +81,12 @@ chat.on('message', async ctx => {
 	if (waitingForPartner) await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
 })
 
+chat.action(/^res-.+/, async ctx => {
+	await ctx.answerCbQuery();
+	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
+	if(!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
+	if(!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.permissionDenied');
+	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
+})
+
 module.exports = chat;

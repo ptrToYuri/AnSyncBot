@@ -28,9 +28,18 @@ module.exports = [
 					parse_mode: 'HTML',
 					...(shouldRemoveKb ? Markup.removeKeyboard() : {})
 				});
-			for (let ans of interchange.answers) {
+			for (let ans of interchange.answers)
 				await bot.telegram.forwardMessage(userId, ans.userId, ans.messageId)
-			}
+		},
+		explore: async (ctx, interchange) => {	// todo: chunk string
+			return ctx.replyWithHTML(ctx.i18n.t(`answerTypes.${interchange.answerType}.explore`,
+				{
+					creator: ctx.chat.id == interchange.creatorId ?
+						ctx.i18n.t('withBot.self') : interchange.creatorFriendlyName,
+					question: interchange.question.toUpperCase(),
+					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent}`).join('\n\n')
+				}),
+				Markup.removeKeyboard())
 		}
 	},
 

@@ -33,6 +33,7 @@ errors:
     notInDb: Ошибка. Не удалось найти вопрос в базе данных
     success: Этот опрос уже завершен
     failure: Этот опрос завершился неудачей. Скорее всего, кто-то оказался отвечать
+  permissionDenied: Просмотр невозможен из соображений приватности. Возможно, вы не участвовали в данном опросе
 
 answerTypes:
   verbose:
@@ -42,6 +43,7 @@ answerTypes:
     inlineButton: Написать
     prompt: "${creator}: <b>${question}</b>\n\nПринимается текст любой длины"
     resFromPrivate: "Ответ получен. После прочтения можете вернуться в ваш чат.\n\n<b>${question}</b>"
+    explore: "<u>${creator}: <b>${question}</b></u>\n\n${data}"
   score:
     inlineTitle: Десятибалльная шкала
     inlineDescription: Вы и собеседник оцените что-то по 10-балльной шкале
