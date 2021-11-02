@@ -25,7 +25,7 @@ chat.on('inline_query', ctx => {
 			},
 			reply_markup: {
 				inline_keyboard:
-					[[Markup.button.url(ctx.i18n.t(`answerTypes.${el.name}.inlineButton`),
+					[[Markup.button.url(ctx.i18n.t(`answerTypes.${el.name}.joinButton`),
 						`t.me/${ctx.botInfo.username}?start=join-${ctx.session.inviteSecret}`)]]
 			}
 		}));
@@ -41,7 +41,7 @@ chat.on('chosen_inline_result', async ctx => {
 	console.log(`[INL_PRIV] Pushing invitation ${ctx.session.inviteSecret} to db`);
 	await interchanges.create({
 		invitation: ctx.session.inviteSecret,
-		fromPrivate: true,
+		fromGroup: false,
 		creatorId: ctx.from.id,
 		creatorFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
 		maxParticipants: 2,

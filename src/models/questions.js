@@ -5,13 +5,20 @@ const mongoose = require('mongoose');
 const schema = new mongoose.Schema({
 
 	invitation: { type: String, required: true },
-	fromPrivate: { type: Boolean, required: true },
 
 	maxParticipants: { type: Number, required: true },
 	maxRefused: { type: Number, default: 0 },
+	isAnonymous: { type: Boolean, default: false },
+	validUntil: Date,
 
 	question: { type: String, required: true },
 	answerType: { type: String, required: true },
+	
+	fromGroup: { type: Boolean, required: true },
+	groupData: {
+		id: Number,
+		promptMessageId: Number
+	},
 
 	creatorId: { type: Number, required: true },
 	creatorFriendlyName: { type: String, required: true },

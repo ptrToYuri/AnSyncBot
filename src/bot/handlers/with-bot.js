@@ -2,13 +2,16 @@
 
 const { Composer, Markup } = require('telegraf');
 const { match } = require('@grammyjs/i18n');
+const shuffle = require('shuffle-array')
 
 const OpError = require(`${__base}/utils/op-error`);
 const interchanges = require(`${__base}/controllers/interchanges`);
 const subscriptions = require(`${__base}/controllers/subscriptions`);
-const answerTypes = require(`${__base}/bot/answer-types`)
+const answerTypes = require(`${__base}/bot/answer-types`);
 
 const chat = new Composer();
+
+const answerUpdateTypes = ['message', 'callback_query'];
 
 chat.start(async ctx => {
 	if (ctx.startPayload.startsWith('info-'))
@@ -18,6 +21,16 @@ chat.start(async ctx => {
 			ctx.startPayload.substring('join-'.length));
 
 		if (!interchange) throw new OpError('errors.joinFailures.notInDb');
+		if (interchange.fromGroup) {
+			try {
+				console.log(`[WITH_BOT] Checking whether ${ctx.from.id} is a member of group ${interchange.groupData.id}`)
+				const memberInfo = await ctx.telegram.getChatMember(interchange.groupData.id, ctx.from.id);
+				if (memberInfo.status != 'member' && memberInfo.status != 'restricted'
+					&& memberInfo.status != 'administrator' && memberInfo.status != 'creator') throw -1;
+			} catch (err) {
+				throw new OpError('errors.joinFailures.notMemberOfChat');
+			}
+		}
 		if (interchange.status !== 'pending') {
 			delete ctx.session.interchangeId;
 			return ctx.replyWithHTML(ctx.i18n.t(`errors.joinFailures.${interchange.status}`),
@@ -26,6 +39,10 @@ chat.start(async ctx => {
 						Markup.button.callback(ctx.i18n.t('withBot.queryResults'), `res-${interchange._id}`)]])
 					: Markup.removeKeyboard())
 			);
+		}
+		if (await interchanges.alreadyAnswered(interchange._id, ctx.chat.id)) {
+			delete ctx.session.interchangeId;
+			throw new OpError('errors.alreadyAnswered');
 		}
 
 		console.log(`[WITH_BOT] Join succeed for ${ctx.from.id}, interchange id ${interchange._id}`);
@@ -64,28 +81,33 @@ chat.action('leave', async ctx => {
 })
 chat.action('do-not-leave', ctx => ctx.deleteMessage().catch(e => e));
 
-chat.on('message', async ctx => {
-	if(!ctx.session.interchangeId) return ctx.replyWithHTML(ctx.i18n.t('errors.noContext'));
+chat.use(async ctx => {
+	if (!answerUpdateTypes.includes(ctx.updateType)) return;
+	if (ctx.callbackQuery) await ctx.answerCbQuery();
+	if (!ctx.session.interchangeId) return ctx.replyWithHTML(ctx.i18n.t('errors.noContext'));
 
 	const res = await answerTypes.find(el => el.name == ctx.session.lastAnswerType)
 		.getResponse(ctx);
 	if (!res) return;
 
-	const waitingForPartner = await interchanges.submitAnswer(ctx.session.interchangeId, {
+	const waitingFor = await interchanges.submitAnswer(ctx.session.interchangeId, {
 		userId: ctx.from.id,
 		userFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
-		messageId: ctx.message.message_id,
+		messageId: ctx.message?.message_id,
 		messageContent: res
 	});
 	delete ctx.session.interchangeId;
-	if (waitingForPartner) await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
+	if (waitingFor == 'private') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
+	else if (waitingFor == 'group') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForOthers'), Markup.removeKeyboard());
+	else await ctx.replyWithChatAction('typing');
 })
 
 chat.action(/^res-.+/, async ctx => {
 	await ctx.answerCbQuery();
 	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
-	if(!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
-	if(!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.permissionDenied');
+	if (!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
+	if (!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.viewPermissionDenied');
+	shuffle(res.answers);
 	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
 })
 

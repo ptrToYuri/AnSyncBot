@@ -26,8 +26,9 @@ bot.catch(async (err, ctx) => {
 	}
 	else {
 		console.log(err.stack);
-		await ctx.replyWithHTML(ctx.i18n.t('errors.somethingWentWrong'))
-			.catch(err => console.log(`[BOT] Failed to report code error: ${err.message}`));
+		if (ctx.chat?.type && !ctx.inlineQuery)
+			await ctx.replyWithHTML(ctx.i18n.t('errors.somethingWentWrong'))
+				.catch(err => console.log(`[BOT] Failed to report code error: ${err.message}`));
 	}
 })
 
@@ -42,8 +43,7 @@ bot.use(require('telegraf-throttler').telegrafThrottler());
 bot.use(logger.middleware());
 
 module.exports.createSession = function (db) {
-	bot.use(require('telegraf-session-mongodb').session(db,
-		{ sessionKeyFn: ctx => { return `${ctx.from ? ctx.from.id : null}:${ctx.chat ? ctx.chat.id : null}` } }));
+	bot.use(require('telegraf-session-mongodb').session(db, { sessionKeyFn: sessionKey }));
 	bot.use(new Scenes.Stage([]).middleware());	// session does not work otherwise
 	bot.use(i18n.middleware());
 	bot.use(router);
@@ -51,7 +51,16 @@ module.exports.createSession = function (db) {
 	launch();
 }
 
-require('./session-private-noctx').init(bot, i18n);
+function sessionKey(ctx) {
+	const user = ctx.from ? ctx.from.id : null;
+	const chat = ctx.chat ? ctx.chat.id : null;
+	if (!chat) return 'inline-' + user;
+	else if (user == chat) return 'withBot-' + chat;
+	else return 'group-' + chat;
+}
+
+require('./utils/command-init').init(bot, i18n);
+require('./utils/session-noctx').init(bot, i18n);
 require('./mailer').init(bot, i18n);
 
 module.exports.close = function (reason) {

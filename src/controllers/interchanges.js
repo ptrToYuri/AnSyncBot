@@ -23,7 +23,16 @@ async function getWithAnswers(id) {
 	return questions.findById(id).populate('answers');
 }
 
-async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
+async function alreadyAnswered(interchangeId, userId) {
+	return answers.exists({
+		interchangeId: interchangeId,
+		userId: userId
+	})
+}
+
+async function submitAnswer(interchangeId, params, subscribeOnSuccess = true, isAnonymous = false) {
+	if (isAnonymous) params.userFriendlyName = '???';
+
 	const session = await mongoose.startSession();
 	console.log(`[INTCNG] Processing new answer for ${interchangeId}`);
 	try {
@@ -95,10 +104,10 @@ async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 
 			switch (qRes.status) {
 				case 'pending':
-					subscriptions.process(interchangeId, 'progress', qRes, qRes.fromPrivate ? [params.userId] : [])
+					subscriptions.process(interchangeId, 'progress', qRes, qRes.fromGroup ? [] : [params.userId])
 					break;
 				case 'failure':
-					subscriptions.process(interchangeId, qRes.status, qRes, qRes.fromPrivate ? [params.userId] : [])
+					subscriptions.process(interchangeId, qRes.status, qRes, qRes.fromGroup ? [] : [params.userId])
 					waitingForOthers = false;
 					break;
 				case 'success':
@@ -110,7 +119,11 @@ async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 		else throw new OpError('errors.alreadyEnded');
 		await session.commitTransaction();
 		session.endSession();
-		return waitingForOthers;
+		return waitingForOthers
+			? qRes.fromGroup
+				? 'group'
+				: 'private'
+			: null;
 	} catch (err) {
 		await session.abortTransaction();
 		session.endSession();
@@ -122,6 +135,6 @@ async function submitAnswer(interchangeId, params, subscribeOnSuccess = true) {
 
 module.exports = {
 	create,
-	getByInvitation, get, getWithAnswers,
+	getByInvitation, get, getWithAnswers, alreadyAnswered,
 	submitAnswer
 }
