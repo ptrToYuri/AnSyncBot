@@ -85,7 +85,7 @@ async function submitAnswer(interchangeId, params,  isAnonymous = false, subscri
 							branches: [
 								...params.isRefusal ? [
 									{
-										case: { $lte: [{ $subtract: ['$maxRefused', '$refusedCount'] }, 1] },
+										case: { $lt: [{ $subtract: ['$maxRefused', '$refusedCount'] }, 1] },
 										then: 'failure'
 									}] : [],
 								{
