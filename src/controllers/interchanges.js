@@ -40,7 +40,7 @@ async function submitAnswer(interchangeId, params, isAnonymous = false, subscrib
 	console.log(`[INTCNG] Processing new answer for ${interchangeId}`);
 	try {
 		session.startTransaction();
-		const aRes = await answers.updateOne(
+		var aRes = await answers.updateOne(
 			{
 				userId: params.userId,
 				interchangeId: interchangeId
@@ -53,7 +53,7 @@ async function submitAnswer(interchangeId, params, isAnonymous = false, subscrib
 		if (!aRes.upsertedId) throw new OpError('errors.alreadyAnswered');
 		console.log(`[INTCNG] Answer submitted to collection for ${interchangeId}`)
 
-		const qRes = await questions.findOneAndUpdate(
+		var qRes = await questions.findOneAndUpdate(
 			{ _id: interchangeId },
 			[{
 				$set: {
@@ -99,34 +99,15 @@ async function submitAnswer(interchangeId, params, isAnonymous = false, subscrib
 				}
 			}], { new: true }).session(session);
 
-		let waitingForOthers = true;
 		if (String(qRes.answers[qRes.answers.length - 1]) == aRes.upsertedId) {
 			console.log(`[INTCNG] Answer reflected in base question data for ${interchangeId}`)
 			if (subscribeOnSuccess)
 				await subscriptions.register(params.userId, interchangeId, 'success');
-
-			switch (qRes.status) {
-				case 'pending':
-					subscriptions.process(interchangeId, 'progress', qRes, qRes.fromGroup ? [] : [params.userId])
-					break;
-				case 'failure':
-					subscriptions.process(interchangeId, qRes.status, qRes, qRes.fromGroup ? [] : [params.userId])
-					waitingForOthers = false;
-					break;
-				case 'success':
-					subscriptions.process(interchangeId, qRes.status);
-					waitingForOthers = false;
-					break;
-			}
 		}
 		else throw new OpError('errors.alreadyEnded');
 		await session.commitTransaction();
 		session.endSession();
-		return waitingForOthers
-			? qRes.fromGroup
-				? 'group'
-				: 'private'
-			: null;
+
 	} catch (err) {
 		await session.abortTransaction();
 		session.endSession();
@@ -134,10 +115,45 @@ async function submitAnswer(interchangeId, params, isAnonymous = false, subscrib
 			}. Reason: ${err.message}`);
 		throw err;
 	}
+
+	try {
+		switch (qRes.status) {
+			case 'pending':
+				await subscriptions.process(interchangeId, 'progress', qRes,
+					qRes.fromGroup ? [] : [params.userId]);
+				break;
+			case 'failure':
+				await subscriptions.process(interchangeId, qRes.status, qRes,
+					qRes.fromGroup ? [] : [params.userId])
+				break;
+			case 'success':
+				await subscriptions.process(interchangeId, qRes.status);
+				break;
+		}
+	} catch (err) {
+		console.log(`[INTCNG] Subscr controller failed to process status: ${err.message}`)
+	}
+
+	return qRes.status == 'pending'
+		? qRes.fromGroup
+			? 'group'
+			: 'private'
+		: null;
+}
+
+async function invalidateTimedOut() {
+	try {
+/*		const res = questions.updateMany({
+
+		});*/
+
+	} catch (err) {
+		`[INTCNG] Scheduled invalidate failed: ${err.message}`
+	}
 }
 
 module.exports = {
 	create,
 	getByInvitation, get, getWithAnswers, alreadyAnswered,
-	submitAnswer
+	submitAnswer, invalidateTimedOut
 }
