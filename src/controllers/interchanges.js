@@ -1,6 +1,7 @@
 'use strict';
 
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const shuffle = require('shuffle-array')
 
 const OpError = require(`${__base}/utils/op-error`);
 const questions = require('../models/questions')
@@ -20,7 +21,9 @@ async function get(id) {
 }
 
 async function getWithAnswers(id) {
-	return questions.findById(id).populate('answers');
+	const withAnswers = (await questions.findById(id).populate('answers')).toObject();
+	withAnswers.answers = shuffle(withAnswers.answers)
+	return withAnswers;
 }
 
 async function alreadyAnswered(interchangeId, userId) {

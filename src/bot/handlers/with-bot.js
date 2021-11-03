@@ -2,7 +2,6 @@
 
 const { Composer, Markup } = require('telegraf');
 const { match } = require('@grammyjs/i18n');
-const shuffle = require('shuffle-array')
 
 const OpError = require(`${__base}/utils/op-error`);
 const interchanges = require(`${__base}/controllers/interchanges`);
@@ -86,7 +85,6 @@ chat.action(/^res-.+/, async ctx => {
 	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
 	if (!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
 	if (!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.viewPermissionDenied');
-	shuffle(res.answers);
 	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
 })
 
