@@ -22,6 +22,9 @@ chat.use(async ctx => {
 			const qConfig = await conf.getConfig(ctx);
 			const inviteSecret = genSecret();
 
+			console.log(`[GROUP] Processing new question for group ${ctx.chat.id}, type ${ctx.chat.type
+				}, type ${answerType.name}, config ${JSON.stringify(qConfig)}`);
+
 			if (qConfig.maxParticipants < 2) throw new OpError('errors.notEnoughParticipants');
 
 			const prompt = await ctx.replyWithHTML(ctx.i18n.t(`answerTypes.${answerType.name}.groupMessage`,

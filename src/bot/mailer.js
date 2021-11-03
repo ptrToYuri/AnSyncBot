@@ -34,6 +34,7 @@ updates.on('success', async upd => {
 
 	// FROM GROUP CHAT
 	else {
+		console.log(`[MAILER] Sending results of ${upd.interchange._id} to group ${upd.groupId}`)
 		const groupIdForLink = String(upd.groupId).substring(4);
 		try {
 			const grpSnCtx = await SessionNoCtx.load(upd.groupId, 'group-');
@@ -172,6 +173,8 @@ updates.on('failure', async upd => {
 
 	// FROM GROUP CHAT
 	else {
+		console.log(`[MAILER] reporting failure ${upd.interchange._id} to group ${upd.groupId
+			}. Refused ${upd.interchange.refusedCount}, max ${upd.interchange.maxRefused}`)
 		try {
 			const grpSnCtx = await SessionNoCtx.load(upd.groupId, 'group-');
 			if (grpSnCtx.session.bindings?.[upd.interchange._id]?.progressMsg) {
