@@ -31,7 +31,7 @@ chat.start(async ctx => {
 			}
 		}
 		if (interchange.status !== 'pending') {
-			delete ctx.session.interchangeId;
+			delete ctx.session.lastInterchangeData;
 			return ctx.replyWithHTML(ctx.i18n.t(`errors.joinFailures.${interchange.status}`),
 				(interchange.status == 'success'
 					? Markup.inlineKeyboard([[
@@ -40,7 +40,7 @@ chat.start(async ctx => {
 			);
 		}
 		if (await interchanges.alreadyAnswered(interchange._id, ctx.chat.id)) {
-			delete ctx.session.interchangeId;
+			delete ctx.session.lastInterchangeData;
 			throw new OpError('errors.alreadyAnswered');
 		}
 
@@ -48,10 +48,12 @@ chat.start(async ctx => {
 
 		await subscriptions.register(ctx.from.id, interchange._id, ['progress', 'failure']);
 		await answerTypes.find(el => el.name == interchange.answerType).prompt(ctx, interchange);
-		ctx.session.interchangeId = String(interchange._id);
+		ctx.session.lastInterchangeData = {
+			id: String(interchange._id),
+			answerType: interchange.answerType,
+			isAnonymous: interchange.isAnonymous
+		}
 		ctx.session.kbLazyRemoveId = String(interchange._id);
-		ctx.session.lastAnswerType = interchange.answerType;
-
 	}
 	else return ctx.replyWithHTML(ctx.i18n.t(`withBot.start`, { me: ctx.botInfo.username }),
 		Markup.inlineKeyboard([[Markup.button.switchToChat(ctx.i18n.t('withBot.tryInPrivate'), '')]]))
@@ -68,13 +70,13 @@ chat.hears(match('withBot.refuseButton'), async ctx => {
 });
 chat.action('leave', async ctx => {
 	await ctx.deleteMessage().catch(e => e);
-	if (ctx.session.interchangeId) {
-		await interchanges.submitAnswer(ctx.session.interchangeId, {
+	if (ctx.session.lastInterchangeData) {
+		await interchanges.submitAnswer(ctx.session.lastInterchangeData.id, {
 			userId: ctx.from.id,
 			userFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
 			isRefusal: true
 		})
-		delete ctx.session.interchangeId;
+		delete ctx.session.lastInterchangeData;
 	}
 	await ctx.replyWithHTML(ctx.i18n.t('withBot.youRefused'), Markup.removeKeyboard());
 })
@@ -91,19 +93,19 @@ chat.action(/^res-.+/, async ctx => {
 chat.use(async ctx => {
 	if (!answerUpdateTypes.includes(ctx.updateType)) return;
 	if (ctx.callbackQuery) await ctx.answerCbQuery();
-	if (!ctx.session.interchangeId) return ctx.replyWithHTML(ctx.i18n.t('errors.noContext'));
+	if (!ctx.session.lastInterchangeData) return ctx.replyWithHTML(ctx.i18n.t('errors.noContext'));
 
 	const res = await answerTypes.find(el => el.name == ctx.session.lastAnswerType)
 		.getResponse(ctx);
 	if (!res) return;
 
-	const waitingFor = await interchanges.submitAnswer(ctx.session.interchangeId, {
+	const waitingFor = await interchanges.submitAnswer(ctx.session.lastInterchangeData.id, {
 		userId: ctx.from.id,
 		userFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
 		messageId: ctx.message?.message_id,
 		messageContent: res
-	});
-	delete ctx.session.interchangeId;
+	}, ctx.session.lastInterchangeData.isAnonymous);
+	delete ctx.session.lastInterchangeData;
 	if (waitingFor == 'private') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
 	else if (waitingFor == 'group') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForOthers'), Markup.removeKeyboard());
 	else await ctx.replyWithChatAction('typing');

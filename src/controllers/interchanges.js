@@ -33,7 +33,7 @@ async function alreadyAnswered(interchangeId, userId) {
 	})
 }
 
-async function submitAnswer(interchangeId, params, subscribeOnSuccess = true, isAnonymous = false) {
+async function submitAnswer(interchangeId, params,  isAnonymous = false, subscribeOnSuccess = true) {
 	if (isAnonymous) params.userFriendlyName = '???';
 
 	const session = await mongoose.startSession();

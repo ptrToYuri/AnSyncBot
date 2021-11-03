@@ -160,7 +160,8 @@ updates.on('failure', async upd => {
 					...((snCtx.session?.kbLazyRemoveId == String(upd.interchange._id))
 						? Markup.removeKeyboard() : {})
 				});
-			if (snCtx.session.interchangeId == String(upd.interchange._id)) delete snCtx.session.interchangeId;
+			if (snCtx.session.lastInterchangeData?.id == String(upd.interchange._id))
+				delete snCtx.session.lastInterchangeData;
 			await snCtx.save();
 		} catch (err) {
 			failedToReportIds.push(upd.userIds[0]);
