@@ -20,14 +20,14 @@ Please make sure you have done the following:
 
 bot.catch(async (err, ctx) => {
 	if (err.category == 'operational') {
+		console.log(`[OPERROR] ${err.message}`);
 		if (ctx.chat?.type && !ctx.inlineQuery)
 			await ctx.replyWithHTML(ctx.i18n.t(err.message, err.args))
 				.catch(err => console.log(`[BOT] Failed to report operror: ${err.message}`));
-		console.log(`[OPERROR] ${err.message}`);
 	}
 	else {
 		console.log(err.stack);
-		if (ctx.chat?.type && !ctx.inlineQuery)
+		if (!ctx.chat?.type && !ctx.inlineQuery && !err.message.includes('query is too old'))
 			await ctx.replyWithHTML(ctx.i18n.t('errors.somethingWentWrong'))
 				.catch(err => console.log(`[BOT] Failed to report code error: ${err.message}`));
 	}
