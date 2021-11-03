@@ -7,11 +7,12 @@ const subscriptions = require('../models/subscriptions');
 
 const events = new EventEmitter();
 
-async function register(userId, interchangeId, updateNames) {
+async function register(chatId, interchangeId, updateNames, isGroup = false) {
 	await subscriptions.findOneAndUpdate(
 		{
-			userId: userId,
-			interchangeId: interchangeId
+			chatId: chatId,
+			interchangeId: interchangeId,
+			isGroup: isGroup
 		},
 		{
 			$addToSet: { updates: updateNames }
@@ -20,20 +21,21 @@ async function register(userId, interchangeId, updateNames) {
 			upsert: true
 		}
 	);
-	console.log(`[SUBSCR] Registered updates ${updateNames} for ${userId
-		}, interchange id ${interchangeId}`)
+	console.log(`[SUBSCR] Registered updates ${updateNames} for ${chatId
+		}, interchange id ${interchangeId}, isGroup ${isGroup}`)
 }
 
-async function process(interchangeId, updateName, optObj = null, excludedUserIds = []) {
+async function process(interchangeId, updateName, optObj = null, excludedChatIds = []) {
 	console.log(`[SUBSCR] Processing update "${updateName}" for ${interchangeId
-		}, excluded ${excludedUserIds.length ? excludedUserIds : 'none'}`);
+		}, excluded ${excludedChatIds.length ? excludedChatIds : 'none'}`);
 	const matches = (await subscriptions.find({ interchangeId: interchangeId }))
 		.filter(el => el.updates.includes(updateName))
-		.filter(el => !excludedUserIds.includes(el.userId))
+		.filter(el => !excludedChatIds.includes(el.chatId))
 	if (matches.length)
 		events.emit(updateName,
 			{
-				userIds: matches.map(el => el.userId),
+				userIds: matches.filter(el => !el.isGroup).map(el => el.chatId),
+				groupId: matches.find(el => el.isGroup)?.chatId,
 				interchange: (updateName == 'success'
 					? optObj || await require('../controllers/interchanges').getWithAnswers(interchangeId)
 					: optObj || await require('../controllers/interchanges').get(interchangeId)
@@ -42,13 +44,13 @@ async function process(interchangeId, updateName, optObj = null, excludedUserIds
 		)
 }
 
-async function deregisterExceptFor(interchangeId, excludedUserIds) {
+async function deregisterExceptFor(interchangeId, excludedChatIds) {
 	await subscriptions.deleteMany({
 		interchangeId: interchangeId,
-		userId: { $nin: excludedUserIds }
+		chatId: { $nin: excludedChatIds }
 	});
 	console.log(`[SUBSCR] Removing all updates for ${interchangeId
-		} for users except ${excludedUserIds.length ? excludedUserIds : 'none'}`);
+		} for users except ${excludedChatIds.length ? excludedChatIds : 'none'}`);
 }
 
 module.exports = {

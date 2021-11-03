@@ -81,6 +81,15 @@ chat.action('leave', async ctx => {
 })
 chat.action('do-not-leave', ctx => ctx.deleteMessage().catch(e => e));
 
+chat.action(/^res-.+/, async ctx => {
+	await ctx.answerCbQuery();
+	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
+	if (!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
+	if (!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.viewPermissionDenied');
+	shuffle(res.answers);
+	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
+})
+
 chat.use(async ctx => {
 	if (!answerUpdateTypes.includes(ctx.updateType)) return;
 	if (ctx.callbackQuery) await ctx.answerCbQuery();
@@ -100,15 +109,6 @@ chat.use(async ctx => {
 	if (waitingFor == 'private') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForPartner'), Markup.removeKeyboard());
 	else if (waitingFor == 'group') await ctx.replyWithHTML(ctx.i18n.t('withBot.waitingForOthers'), Markup.removeKeyboard());
 	else await ctx.replyWithChatAction('typing');
-})
-
-chat.action(/^res-.+/, async ctx => {
-	await ctx.answerCbQuery();
-	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
-	if (!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
-	if (!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.viewPermissionDenied');
-	shuffle(res.answers);
-	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
 })
 
 module.exports = chat;

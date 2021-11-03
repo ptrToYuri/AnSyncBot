@@ -6,7 +6,8 @@ const OpError = require(`${__base}/utils/op-error`);
 const conf = require('./config')
 const genSecret = require(`${__base}/utils/secret-generator`);
 const answerTypes = require(`${__base}/bot/answer-types`);
-const interchanges = require(`${__base}/controllers/interchanges`)
+const interchanges = require(`${__base}/controllers/interchanges`);
+const subscriptions = require(`${__base}/controllers/subscriptions`);
 
 const chat = new Composer();
 
@@ -51,13 +52,16 @@ chat.use(async ctx => {
 				fromGroup: true,
 				groupData: {
 					id: ctx.chat.id,
-					promptMessageId: prompt.message_id
+					promptMessageId: prompt.message_id,
+					supportsMessageLinks: ctx.chat.type === 'supergroup'
 				},
 
 				creatorId: ctx.from.id,
 				creatorFriendlyName: ctx.from.first_name + (ctx.from.last_name ? ` ${ctx.from.last_name}` : ''),
 
 			});
+
+			await subscriptions.register(ctx.chat.id, interchange._id, ['progress', 'failure', 'success'], true);
 
 			const progressMsg = await ctx.replyWithHTML(ctx.i18n.t('group.progress',
 				{

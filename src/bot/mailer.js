@@ -8,8 +8,11 @@ const SessionNoCtx = require('./utils/session-noctx').SessionNoCtx;
 
 const updates = subscriptions.events;
 
+
 updates.on('success', async upd => {
 	let failedIds = [];
+
+	// FROM PRIVATE CHAT
 	if (!upd.interchange.fromGroup) {
 		for (let userId of upd.userIds) {
 			console.log(`[MAILER] Notifying user ${userId} about success of ${upd.interchange._id}`)
@@ -28,41 +31,84 @@ updates.on('success', async upd => {
 			}
 		}
 	}
-	else {
-		try {
-			const grpSnCtx = await SessionNoCtx.load(upd.interchange.groupData.id, 'group-');
-			if (grpSnCtx.session.bindings?.[upd.interchange._id]?.progressMsg)
-				await bot.telegram.deleteMessage(upd.interchange.groupData.id, grpSnCtx.session.bindings[upd.interchange._id].progressMsg).catch(e => e);
-			else console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.interchange.groupData.id}`)
 
-			const groupMsgId = await answerTypes.find(el => el.name == upd.interchange.answerType)
+	// FROM GROUP CHAT
+	else {
+		const groupIdForLink = String(upd.groupId).substring(4);
+		try {
+			const grpSnCtx = await SessionNoCtx.load(upd.groupId, 'group-');
+			if (grpSnCtx.session.bindings?.[upd.interchange._id]?.progressMsg) {
+				await bot.telegram.deleteMessage(upd.groupId,
+					grpSnCtx.session.bindings[upd.interchange._id].progressMsg).catch(e => e);
+				delete grpSnCtx.session.bindings[upd.interchange._id];
+			}
+			else console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.groupId}`)
+			var groupResultMsgId = await answerTypes.find(el => el.name == upd.interchange.answerType)
 				.sendResultsToGroup(
 					upd.interchange,
 					bot,
 					grpSnCtx);
-
-			await bot.telegram.editMessageText(
-				upd.interchange.groupData.id,
-				upd.interchange.groupData.promptMessageId,
-				null,
-				grpSnCtx.t('group.promptEdited', {
-					question: upd.interchange.question,
-					link: upd.interchange.groupData.id > 0
-						? grpSnCtx.t('group.promptEditedSupergroup', {
-							href: `https://t.me/c/${upd.interchange.groupData.id}/${groupMsgId}`
-						})
-						: grpSnCtx.t('group.promptEditedGroup')
-				}),
-				{ parse_mode: 'HTML' }).catch(e => e)
+			try {
+				await bot.telegram.editMessageText(
+					upd.groupId,
+					upd.interchange.groupData.promptMessageId,
+					null,
+					grpSnCtx.t('group.promptEdited', {
+						question: upd.interchange.question,
+						link: ((upd.interchange.groupData.supportsMessageLinks && groupResultMsgId)
+							? grpSnCtx.t('group.promptEditSucceedSupergroup', {
+								href: `https://t.me/c/${groupIdForLink}/${groupResultMsgId}`
+							})
+							: grpSnCtx.t('group.promptEditSucceedGroup'))
+					}),
+					{ parse_mode: 'HTML' })
+			} catch { }
 		} catch (err) {
-			console.log(err.stack)
+			failedIds.push(upd.groupId);
+			console.log(`[MAILER] Failed to handle group success event: ${err.message}. Queued group ${upd.groupId}`);
+		}
+		for (let userId of upd.userIds) {
+			console.log(`[MAILER] Notifying user ${userId} about success of ${upd.interchange._id}`)
+			try {
+				const snCtx = await SessionNoCtx.load(userId);
+				if (snCtx.session?.kbLazyRemoveId == String(upd.interchange._id))
+					await bot.telegram.sendMessage(
+						userId,
+						snCtx.t('withBot.removeInlineKbMsg'),
+						{
+							reply_markup: Markup.removeKeyboard().reply_markup,
+							parse_mode: 'HTML'
+						}
+					)
+				await bot.telegram.sendMessage(
+					userId,
+					snCtx.t('withBot.seeInGroup', {
+						question: upd.interchange.question,
+						link: ((upd.interchange.groupData.supportsMessageLinks && groupResultMsgId)
+							? snCtx.t('withBot.seeInSupergroupExtra',
+								{ href: `https://t.me/c/${groupIdForLink}/${groupResultMsgId}` })
+							: '')
+					}),
+					{
+						reply_markup: Markup.inlineKeyboard([[
+							Markup.button.callback(snCtx.t('withBot.queryResultsHere'), `res-${upd.interchange._id}`)]]).reply_markup,
+						parse_mode: 'HTML'
+					}
+				);
+			} catch (err) {
+				failedIds.push(userId);
+				console.log(`[MAILER] Failed to report results: ${err.message}. Queued user ${userId}`)
+			}
 		}
 	}
 	await subscriptions.deregisterExceptFor(upd.interchange._id, failedIds)
 		.catch(err => console.log(`[MAILER] Failed to deregister updates: ${err.message}`));
 });
 
+
 updates.on('progress', async upd => {
+
+	// FROM PRIVATE CHAT
 	if (!upd.interchange.fromGroup) {
 		const snCtx = await SessionNoCtx.load(upd.userIds[0]);
 		console.log(`[MAILER] Notifying user ${upd.userIds[0]} about progress of ${upd.interchange._id}`)
@@ -72,13 +118,15 @@ updates.on('progress', async upd => {
 			{ parse_mode: 'HTML' }
 		).catch(err => console.log(`[MAILER] Failed to report results: ${err.message}`))
 	}
+
+	// FROM GROUP CHAT
 	else {
-		console.log(`[MAILER] Notifying group ${upd.interchange.groupData} about progress of ${upd.interchange._id
+		console.log(`[MAILER] Notifying group ${upd.groupId} about progress of ${upd.interchange._id
 			}, answered ${upd.interchange.answersCount}`);
-		const grpSnCtx = await SessionNoCtx.load(upd.interchange.groupData.id, 'group-');
+		const grpSnCtx = await SessionNoCtx.load(upd.groupId, 'group-');
 		if (grpSnCtx.session.bindings?.[upd.interchange._id]?.progressMsg)
 			await bot.telegram.editMessageText(
-				upd.interchange.groupData.id,
+				upd.groupId,
 				grpSnCtx.session.bindings[upd.interchange._id].progressMsg,
 				null,
 				grpSnCtx.t('group.progress', {
@@ -89,14 +137,17 @@ updates.on('progress', async upd => {
 					refusesLeft: upd.interchange.maxRefused - upd.interchange.refusedCount
 				}),
 				{ parse_mode: 'HTML' }
-			);
+			).catch(e => e);
 		else
-			console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.interchange.groupData.id}`)
+			console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.groupId}`)
 	}
 })
 
+
 updates.on('failure', async upd => {
 	let failedToReportIds = [];
+
+	// FROM PRIVATE CHAT
 	if (!upd.interchange.fromGroup) {
 		console.log(`[MAILER] Notifying user ${upd.userIds[0]} about failure of ${upd.interchange._id}`)
 		try {
@@ -116,6 +167,67 @@ updates.on('failure', async upd => {
 			console.log(`[MAILER] Failed to report results: ${err.message}. Queued user ${upd.userIds[0]}`)
 		}
 	}
+
+	// FROM GROUP CHAT
+	else {
+		try {
+			const grpSnCtx = await SessionNoCtx.load(upd.groupId, 'group-');
+			if (grpSnCtx.session.bindings?.[upd.interchange._id]?.progressMsg) {
+				await bot.telegram.deleteMessage(upd.groupId,
+					grpSnCtx.session.bindings[upd.interchange._id].progressMsg).catch(e => e);
+				delete grpSnCtx.session.bindings[upd.interchange._id];
+			}
+			else console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.groupId}`);
+			await bot.telegram.sendMessage(
+				upd.groupId,
+				grpSnCtx.t('group.failed', {
+					reason: upd.interchange.refusedCount > upd.interchange.maxRefused
+						? grpSnCtx.t('errors.tooManyRefuses') : grpSnCtx.t('errors.timeout')
+				}),
+				{
+					parse_mode: 'HTML',
+					reply_to_message_id: upd.interchange.groupData.promptMessageId,
+					allow_sending_without_reply: true
+				}
+			)
+			try {
+				await bot.telegram.editMessageText(
+					upd.groupId,
+					upd.interchange.groupData.promptMessageId,
+					null,
+					grpSnCtx.t('group.promptEditFailed', {
+						question: upd.interchange.question
+					}),
+					{ parse_mode: 'HTML' })
+			} catch { }
+		} catch (err) {
+			failedToReportIds.push(upd.groupId);
+			console.log(`[MAILER] Failed to handle group failure event: ${err.message}. Queued group ${upd.groupId}`);
+		}
+		for (let userId of upd.userIds) {
+			console.log(`[MAILER] Notifying user ${userId} about failure of ${upd.interchange._id}`)
+			try {
+				const snCtx = await SessionNoCtx.load(userId);
+				await bot.telegram.sendMessage(
+					userId,
+					snCtx.t('withBot.groupFailed', {
+						question: upd.interchange.question,
+						reason: upd.interchange.refusedCount > upd.interchange.maxRefused
+							? snCtx.t('errors.tooManyRefuses') : snCtx.t('errors.timeout')
+					}),
+					{
+						parse_mode: 'HTML',
+						...((snCtx.session?.kbLazyRemoveId == String(upd.interchange._id))
+							? Markup.removeKeyboard() : {})
+					}
+				);
+			} catch (err) {
+				failedToReportIds.push(userId);
+				console.log(`[MAILER] Failed to report failure: ${err.message}. Queued user ${userId}`)
+			}
+		}
+	}
+
 	await subscriptions.deregisterExceptFor(upd.interchange._id, failedToReportIds)
 		.catch(err => console.log(`[MAILER] Failed to deregister updates: ${err.message}`));
 })

@@ -13,11 +13,15 @@ const schema = new mongoose.Schema({
 
 	question: { type: String, required: true },
 	answerType: { type: String, required: true },
-	
+
 	fromGroup: { type: Boolean, required: true },
 	groupData: {
-		id: Number,
-		promptMessageId: Number
+		type: {
+			id: { type: Number, required: true },
+			promptMessageId: { type: Number, required: true },
+			supportsMessageLinks: { type: Boolean, required: true },
+		},
+		required: false
 	},
 
 	creatorId: { type: Number, required: true },
