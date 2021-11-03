@@ -8,7 +8,8 @@ const bot = new Telegraf(config.get('botToken'));
 async function launch() {
 	try {
 		await bot.launch();
-		console.log(`[BOT] Telegram bot started.\nPlease make sure you have done the following:
+		console.log(`[BOT] Telegram bot started.
+Please make sure you have done the following:
 1. /setinline -> enabled using Botfather
 2. /setinlinefeedback -> enabled using BotFather`);
 	} catch (err) {

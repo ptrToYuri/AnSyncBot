@@ -41,6 +41,7 @@ updates.on('success', async upd => {
 				await bot.telegram.deleteMessage(upd.groupId,
 					grpSnCtx.session.bindings[upd.interchange._id].progressMsg).catch(e => e);
 				delete grpSnCtx.session.bindings[upd.interchange._id];
+				await grpSnCtx.save();
 			}
 			else console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.groupId}`)
 			var groupResultMsgId = await answerTypes.find(el => el.name == upd.interchange.answerType)
@@ -177,6 +178,7 @@ updates.on('failure', async upd => {
 				await bot.telegram.deleteMessage(upd.groupId,
 					grpSnCtx.session.bindings[upd.interchange._id].progressMsg).catch(e => e);
 				delete grpSnCtx.session.bindings[upd.interchange._id];
+				await grpSnCtx.save();
 			}
 			else console.log(`[MAILER] Failed to find progressMsg in session for group ${upd.groupId}`);
 			await bot.telegram.sendMessage(

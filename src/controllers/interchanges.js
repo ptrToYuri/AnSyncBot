@@ -22,7 +22,7 @@ async function get(id) {
 
 async function getWithAnswers(id) {
 	const withAnswers = (await questions.findById(id).populate('answers')).toObject();
-	withAnswers.answers = shuffle(withAnswers.answers)
+	withAnswers.answers = shuffle(withAnswers.answers).filter(el => !el.isRefusal);
 	return withAnswers;
 }
 
@@ -33,7 +33,7 @@ async function alreadyAnswered(interchangeId, userId) {
 	})
 }
 
-async function submitAnswer(interchangeId, params,  isAnonymous = false, subscribeOnSuccess = true) {
+async function submitAnswer(interchangeId, params, isAnonymous = false, subscribeOnSuccess = true) {
 	if (isAnonymous) params.userFriendlyName = '???';
 
 	const session = await mongoose.startSession();

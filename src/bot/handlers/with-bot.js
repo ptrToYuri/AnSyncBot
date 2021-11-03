@@ -95,7 +95,7 @@ chat.use(async ctx => {
 	if (ctx.callbackQuery) await ctx.answerCbQuery();
 	if (!ctx.session.lastInterchangeData) return ctx.replyWithHTML(ctx.i18n.t('errors.noContext'));
 
-	const res = await answerTypes.find(el => el.name == ctx.session.lastAnswerType)
+	const res = await answerTypes.find(el => el.name == ctx.session.lastInterchangeData.answerType)
 		.getResponse(ctx);
 	if (!res) return;
 
