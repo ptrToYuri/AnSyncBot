@@ -83,11 +83,11 @@ chat.action('leave', async ctx => {
 chat.action('do-not-leave', ctx => ctx.deleteMessage().catch(e => e));
 
 chat.action(/^res-.+/, async ctx => {
-	await ctx.answerCbQuery();
 	const res = await interchanges.getWithAnswers(ctx.callbackQuery.data.substring('res-'.length));
 	if (!res || res.status !== 'success') throw new OpError('errors.joinFailures.notInDb');
 	if (!res.answers.map(el => el.userId).includes(ctx.from.id)) throw new OpError('errors.viewPermissionDenied');
 	await answerTypes.find(el => el.name == res.answerType).explore(ctx, res);
+	return ctx.answerCbQuery();
 })
 
 chat.use(async ctx => {

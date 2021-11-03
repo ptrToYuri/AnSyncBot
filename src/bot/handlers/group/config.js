@@ -39,8 +39,7 @@ chat.command('config', async ctx => {
 });
 
 chat.action('max-participants', async ctx => {
-	await ctx.answerCbQuery();
-	return ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxParticipants'), Markup.inlineKeyboard([
+	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxParticipants'), Markup.inlineKeyboard([
 		[
 			Markup.button.callback('-20', 'adjust-maxParticipants-substr-20'),
 			Markup.button.callback('-5', 'adjust-maxParticipants-substr-5'),
@@ -54,11 +53,11 @@ chat.action('max-participants', async ctx => {
 			Markup.button.callback('Готово', 'close'),
 		]
 	]))
+	return ctx.answerCbQuery();
 })
 
 chat.action('max-refused', async ctx => {
-	await ctx.answerCbQuery();
-	return ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxRefused'), Markup.inlineKeyboard([
+	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxRefused'), Markup.inlineKeyboard([
 		[
 			Markup.button.callback('-5', 'adjust-maxRefused-substr-5'),
 			Markup.button.callback('-1', 'adjust-maxRefused-substr-1'),
@@ -70,11 +69,11 @@ chat.action('max-refused', async ctx => {
 			Markup.button.callback('Готово', 'close'),
 		]
 	]))
+	return ctx.answerCbQuery();
 })
 
 chat.action('valid-min', async ctx => {
-	await ctx.answerCbQuery();
-	return ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.validMin'), Markup.inlineKeyboard([
+	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.validMin'), Markup.inlineKeyboard([
 		[
 			Markup.button.callback('-5', 'adjust-validMin-substr-5'),
 			Markup.button.callback('-1', 'adjust-validMin-substr-1'),
@@ -94,16 +93,17 @@ chat.action('valid-min', async ctx => {
 			Markup.button.callback('Готово', 'close'),
 		]
 	]))
+	return ctx.answerCbQuery();
 })
 
 chat.action('is-anonymous', async ctx => {
-	await ctx.answerCbQuery();
-	return ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.anonMode'), Markup.inlineKeyboard([
+	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.anonMode'), Markup.inlineKeyboard([
 		[
 			Markup.button.callback(ctx.i18n.t('basic.no'), 'toggle-anon-no'),
 			Markup.button.callback(ctx.i18n.t('basic.yes'), 'toggle-anon-yes')
 		]
 	]))
+	return ctx.answerCbQuery();
 })
 
 chat.action(/^adjust\-maxParticipants\-(.+)/, async ctx => {
@@ -115,10 +115,12 @@ chat.action(/^adjust\-maxParticipants\-(.+)/, async ctx => {
 
 	if (action == 'add')
 		ctx.session.config.maxParticipants =
-			(ctx.session.config.maxParticipants || await ctx.getChatMembersCount() - 1) + parseInt(amount);
+			(ctx.session.config.maxParticipants || await ctx.getChatMembersCount() - 1)
+			+ parseInt(amount);
 
 	if (action == 'substr') {
-		var possibleCurrent = ctx.session.config.maxParticipants || await ctx.getChatMembersCount() - 1;
+		var possibleCurrent = ctx.session.config.maxParticipants
+			|| await ctx.getChatMembersCount() - 1;
 		if (possibleCurrent - parseInt(amount) < 2)
 			return ctx.answerCbQuery(ctx.i18n.t('errors.wrongNumber'));
 		else ctx.session.config.maxParticipants = possibleCurrent - parseInt(amount);
@@ -135,7 +137,8 @@ chat.action('reset-maxParticipants', async ctx => {
 	await ctx.telegram.editMessageText(ctx.chat.id,
 		ctx.session.lastCfgMessage, null,
 		...await getConfigMessage(ctx, false)).catch(e => e);
-	return ctx.answerCbQuery(ctx.i18n.t('group.configPrompt.maxParticipantsCbResult', { num: ctx.i18n.t('basic.auto') }));
+	return ctx.answerCbQuery(ctx.i18n.t('group.configPrompt.maxParticipantsCbResult',
+		{ num: ctx.i18n.t('basic.auto') }));
 })
 
 chat.action(/^adjust\-maxRefused\-(.+)/, async ctx => {
@@ -196,7 +199,8 @@ chat.action('reset-validMin', async ctx => {
 	await ctx.telegram.editMessageText(ctx.chat.id,
 		ctx.session.lastCfgMessage, null,
 		...await getConfigMessage(ctx, false)).catch(e => e);
-	return ctx.answerCbQuery(ctx.i18n.t('group.configPrompt.validMinCbResult', { num: ctx.i18n.t('basic.no') }));
+	return ctx.answerCbQuery(ctx.i18n.t('group.configPrompt.validMinCbResult',
+		{ num: ctx.i18n.t('basic.no') }));
 })
 
 chat.action(/toggle\-anon\-/, async ctx => {
