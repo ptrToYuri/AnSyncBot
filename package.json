@@ -18,6 +18,7 @@
   "homepage": "https://github.com/ptrToYuri/AnSyncBot#readme",
   "dependencies": {
     "@grammyjs/i18n": "^0.1.6",
+    "agenda": "^4.2.1",
     "base64url": "^3.0.1",
     "config": "^3.3.6",
     "log-timestamp": "^0.3.0",
