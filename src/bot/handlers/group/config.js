@@ -76,14 +76,16 @@ chat.action('valid-min', async ctx => {
 	await ctx.answerCbQuery();
 	return ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.validMin'), Markup.inlineKeyboard([
 		[
-			Markup.button.callback('-30', 'adjust-validMin-substr-30'),
 			Markup.button.callback('-5', 'adjust-validMin-substr-5'),
+			Markup.button.callback('-1', 'adjust-validMin-substr-1'),
+			Markup.button.callback('+1', 'adjust-validMin-add-1'),
 			Markup.button.callback('+5', 'adjust-validMin-add-5'),
-			Markup.button.callback('+30', 'adjust-validMin-add-30'),
 		],
 		[
 			Markup.button.callback('-1440', 'adjust-validMin-substr-1440'),
 			Markup.button.callback('-180', 'adjust-validMin-substr-180'),
+			Markup.button.callback('-30', 'adjust-validMin-substr-30'),
+			Markup.button.callback('+30', 'adjust-validMin-add-30'),
 			Markup.button.callback('+180', 'adjust-validMin-add-180'),
 			Markup.button.callback('+1440', 'adjust-validMin-add-1440'),
 		],
@@ -171,14 +173,14 @@ chat.action(/^adjust\-validMin\-(.+)/, async ctx => {
 	const amount = ctx.callbackQuery.data.split('-')[3];
 
 	if ((action !== 'add' && action != 'substr') ||
-		(amount != '5' && amount != '30' && amount != '180' && amount != '1440'))
+		(amount != '1' && amount != '5' && amount != '30' && amount != '180' && amount != '1440'))
 		return ctx.answerCbQuery(ctx.i18n.t('errors.somethingWentWrong'));
 
 	if (action == 'add')
 		ctx.session.config.validMin = (ctx.session.config.validMin || 0) + parseInt(amount);
 
 	if (action == 'substr') {
-		if ((ctx.session.config.validMin || 0) - parseInt(amount) < 5)
+		if ((ctx.session.config.validMin || 0) - parseInt(amount) < 1)
 			return ctx.answerCbQuery(ctx.i18n.t('errors.wrongNumber'));
 		else ctx.session.config.validMin = (ctx.session.config.validMin || 0) - parseInt(amount);
 	}
