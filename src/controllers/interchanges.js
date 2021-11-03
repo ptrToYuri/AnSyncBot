@@ -142,14 +142,27 @@ async function submitAnswer(interchangeId, params, isAnonymous = false, subscrib
 }
 
 async function invalidateTimedOut() {
-	try {
-/*		const res = questions.updateMany({
-
-		});*/
-
-	} catch (err) {
-		`[INTCNG] Scheduled invalidate failed: ${err.message}`
-	}
+	do {
+		try {
+			console.log(`[INTCG] Looking for expired interchanges`)
+			var interchange = await questions.findOneAndUpdate(
+				{
+					status: 'pending',
+					validUntil: { $lt: Date.now() }
+				},
+				{
+					status: 'failure'
+				},
+				{ new: true })
+			if (interchange) {
+				console.log(`[INTCG] Found expired interchange ${interchange._id}. Status updated`)
+				await subscriptions.process(interchange._id, interchange.status, interchange)
+			}
+			else console.log(`[INTCG] Expired interchanges not found`)
+		} catch (err) {
+			`[INTCNG] Scheduled invalidate failed: ${err.message}`
+		}
+	} while (interchange);
 }
 
 module.exports = {

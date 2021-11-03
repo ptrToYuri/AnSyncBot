@@ -47,7 +47,7 @@ chat.use(async ctx => {
 				maxParticipants: qConfig.maxParticipants,
 				maxRefused: qConfig.maxRefused,
 				isAnonymous: qConfig.isAnonymous,
-				validUntil: qConfig.validMin ? new Date(new Date.getTime() + qConfig.validMin * 60000) : null,
+				validUntil: qConfig.validMin ? new Date((new Date).getTime() + qConfig.validMin * 60000) : null,
 
 				question: question,
 				answerType: answerType.name,
