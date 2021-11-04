@@ -1,6 +1,10 @@
 'use strict';
 
 const { Markup } = require('telegraf');
+const chunk = require('chunk-text');
+
+const median = require('compute-median');
+const average = require('average')
 
 module.exports = [
 
@@ -17,7 +21,7 @@ module.exports = [
 				snCtx.t('answerTypes.verbose.resToGroup', {
 					creator: interchange.creatorFriendlyName,
 					question: interchange.question.toUpperCase(),
-					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent}`).join('\n\n')
+					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent.replace()}`).join('\n\n')
 				}),
 				{
 					parse_mode: 'HTML',
@@ -67,6 +71,21 @@ module.exports = [
 					parse_mode: 'HTML',
 					...(shouldRemoveKb ? Markup.removeKeyboard() : {})
 				});
+		},
+		sendResultsToGroup: async (interchange, bot, snCtx) => {
+			const msg = await bot.telegram.sendMessage(interchange.groupData.id,
+				snCtx.t('answerTypes.verbose.resToGroup', {
+					creator: interchange.creatorFriendlyName,
+					question: interchange.question.toUpperCase(),
+					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent}`).join('\n\n')
+				}),
+				{
+					parse_mode: 'HTML',
+					reply_to_message_id: interchange.groupData.promptMessageId,
+					allow_sending_without_reply: true
+				}
+			)
+			return msg.message_id;
 		},
 		explore: genericExplore
 	},
