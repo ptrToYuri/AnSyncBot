@@ -96,7 +96,8 @@ answerTypes:
     promptMsg1: "${creator}: <b>${question}</b>"
     promptMsg2: "${from.first_name}, какова Ваша оценка? Выберите ответ кнопками ниже"
     resFromPrivate: "Оценки получены. Можете вернуться в ваш чат.\n\n<b>${question}</b>\n\n${data}"
-    explore: "<u>${creator}: <b>${question}</b></u>\n\n${data}"
+    resToGroup: "<u>${creator}: <b>${question}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
+    explore: "<u>${creator}: <b>${question}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
   emoji:
     inlineTitle: Эмодзи
     inlineDescription: Вы и собеседник выразите отношение к предмету разговора одним смайликом

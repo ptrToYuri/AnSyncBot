@@ -4,7 +4,34 @@ const { Markup } = require('telegraf');
 const chunk = require('chunk-text');
 
 const median = require('compute-median');
-const average = require('average')
+const average = require('average');
+
+// ALL ANSWER TYPES IN ONE PLACE. PLEASE ADD ITEM TO THIS ARRAY
+// AND MODIFY LOC FILES IN ORDER TO CREATE NEW ONES
+
+/*
+ *	METHOD SCHEMA. All functions are asyncronious
+ *
+ *	name: [string] Name of answer type
+ *
+ *	prompt (ctx, interchange): Initial prompt message for answer.
+ *		Must also produce keyboard with withBot.refuseButton button
+ *
+ *	getResponse (ctx): Validator for response. Must return non-undefined
+ *		value on success, prompt appropriate error otherwise
+ *
+ *	sendResultsFromPrivate (interchange, userId, bot, snCtx, shouldRemoveKb):
+ *		Used to report results for questions originated from private chat.
+ *		shouldRemoveKb describes whether keyboard with refuse button should be
+ *		removed
+ *
+ *	sendResultsToGroup (interchange, bot, snCtx): Send results to group chat
+ *		MUST RETURN ID OF THE FIRST SENT MESSAGE (FOR LINKAGE)!!!
+ *
+ *	explore (ctx, interchange): Allows to view results from private chat with
+ *		bot. Called only on user request
+*/
+
 
 module.exports = [
 
@@ -17,19 +44,18 @@ module.exports = [
 		},
 		sendResultsFromPrivate: genericForwardFromPrivate,
 		sendResultsToGroup: async (interchange, bot, snCtx) => {
-			const msg = await bot.telegram.sendMessage(interchange.groupData.id,
-				snCtx.t('answerTypes.verbose.resToGroup', {
-					creator: interchange.creatorFriendlyName,
-					question: interchange.question.toUpperCase(),
-					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent.replace()}`).join('\n\n')
-				}),
-				{
-					parse_mode: 'HTML',
+			const text = snCtx.t('answerTypes.verbose.resToGroup', {
+				creator: interchange.creatorFriendlyName,
+				question: interchange.question.toUpperCase(),
+				data: interchange.answers.map(el =>
+					`${el.userFriendlyName}: ${el.messageContent.replace(/\n/g, ' ').trim()}`).join('\n\n')
+			});
+			return (await sendChunked(text, interchange.groupData.id, bot, {
+				extraFirst: {
 					reply_to_message_id: interchange.groupData.promptMessageId,
 					allow_sending_without_reply: true
 				}
-			)
-			return msg.message_id;
+			}))[0]
 		},
 		explore: genericExplore
 	},
@@ -63,9 +89,11 @@ module.exports = [
 			}
 		},
 		sendResultsFromPrivate: async (interchange, userId, bot, snCtx, shouldRemoveKb) => {
-			await bot.telegram.sendMessage(userId, snCtx.t(`answerTypes.${interchange.answerType}.resFromPrivate`, {
+			await bot.telegram.sendMessage(userId, snCtx.t(`answerTypes.score.resFromPrivate`, {
 				question: interchange.question.toUpperCase(),
-				data: interchange.answers.map(el => `${el.userFriendlyName}: <b>${el.messageContent}/10</b>`).join('\n')
+				data: interchange.answers.map(el =>
+					`${userId == el.userId ? snCtx.t('withBot.self') : el.userFriendlyName
+					}: <b>${el.messageContent}/10</b>`).join('\n')
 			}),
 				{
 					parse_mode: 'HTML',
@@ -73,21 +101,43 @@ module.exports = [
 				});
 		},
 		sendResultsToGroup: async (interchange, bot, snCtx) => {
-			const msg = await bot.telegram.sendMessage(interchange.groupData.id,
-				snCtx.t('answerTypes.verbose.resToGroup', {
-					creator: interchange.creatorFriendlyName,
-					question: interchange.question.toUpperCase(),
-					data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent}`).join('\n\n')
-				}),
-				{
-					parse_mode: 'HTML',
+			const text = snCtx.t('answerTypes.score.resToGroup', {
+				creator: interchange.creatorFriendlyName,
+				question: interchange.question.toUpperCase(),
+				answersCount: interchange.answers.length,
+				median: Math.round(median(interchange.answers.map(el => el.messageContent)) * 10) / 10,
+				average: Math.round(average(interchange.answers.map(el => el.messageContent)) * 10) / 10,
+				data: !interchange.isAnonymous
+					? interchange.answers.map(el =>
+						`${el.userFriendlyName}: <b>${el.messageContent}/10</b>`).join('\n')
+					: ''
+			});
+			return (await sendChunked(text, interchange.groupData.id, bot, {
+				extraFirst: {
 					reply_to_message_id: interchange.groupData.promptMessageId,
 					allow_sending_without_reply: true
 				}
-			)
-			return msg.message_id;
+			}))[0];
 		},
-		explore: genericExplore
+		explore: async (ctx, interchange) => {
+			const text = ctx.i18n.t('answerTypes.score.explore', {
+				creator: interchange.creatorFriendlyName,
+				question: interchange.question.toUpperCase(),
+				answersCount: interchange.answers.length,
+				median: Math.round(median(interchange.answers.map(el => el.messageContent)) * 10) / 10,
+				average: Math.round(average(interchange.answers.map(el => el.messageContent)) * 10) / 10,
+				data: !interchange.isAnonymous
+					? interchange.answers.map(el =>
+						`${ctx.from.id == el.userId ? ctx.i18n.t('withBot.self') : el.userFriendlyName
+						}: <b>${el.messageContent}/10</b>`).join('\n')
+					: ''
+			});
+			await sendChunked(text, ctx.from.id, ctx, {
+				extraFirst: {
+					reply_markup: Markup.removeKeyboard()
+				}
+			})
+		}
 	},
 
 	/*	{
@@ -95,6 +145,21 @@ module.exports = [
 		}	*/
 
 ]
+
+async function sendChunked(text, chatId, bot, { extraFirst, extraLast }) {
+	const chunks = chunk(text, 4096);
+	let sentIds = [];
+	for (let [i, chunk] of chunks.entries()) {
+		const msg = await bot.telegram.sendMessage(chatId, chunk,
+			{
+				parse_mode: 'HTML',
+				...(i == 0 ? extraFirst : {}),
+				...(i == chunks.length - 1 ? extraLast : {})
+			})
+		sentIds.push(msg.message_id);
+	}
+	return sentIds;
+}
 
 async function genericPrompt(ctx, interchange) {
 	return ctx.replyWithHTML(ctx.i18n.t(`answerTypes.${interchange.answerType}.prompt`,
@@ -106,15 +171,21 @@ async function genericPrompt(ctx, interchange) {
 		Markup.keyboard([[ctx.i18n.t('withBot.refuseButton')]]).resize())
 }
 
-async function genericExplore(ctx, interchange) {	// todo: chunk string
-	return ctx.replyWithHTML(ctx.i18n.t(`answerTypes.${interchange.answerType}.explore`,
+async function genericExplore(ctx, interchange) {
+	const text = ctx.i18n.t(`answerTypes.${interchange.answerType}.explore`,
 		{
 			creator: ctx.chat.id == interchange.creatorId ?
 				ctx.i18n.t('withBot.self') : interchange.creatorFriendlyName,
 			question: interchange.question.toUpperCase(),
-			data: interchange.answers.map(el => `${el.userFriendlyName}: ${el.messageContent}`).join('\n\n')
-		}),
-		Markup.removeKeyboard())
+			data: interchange.answers.map(el =>
+				`${ctx.from.id == el.userId ? ctx.i18n.t('withBot.self') : el.userFriendlyName
+				}: ${el.messageContent.replace(/\n/g, ' ').trim()}`).join('\n\n')
+		});
+	await sendChunked(text, ctx.chat.id, ctx, {
+		extraFirst: {
+			reply_markup: Markup.removeKeyboard()
+		}
+	});
 }
 
 async function genericForwardFromPrivate(interchange, userId, bot, snCtx, shouldRemoveKb) {
