@@ -41,9 +41,9 @@ chat.command('config', async ctx => {
 chat.action('max-participants', async ctx => {
 	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxParticipants'), Markup.inlineKeyboard([
 		[
-			Markup.button.callback('-20', 'adjust-maxParticipants-substr-20'),
-			Markup.button.callback('-5', 'adjust-maxParticipants-substr-5'),
-			Markup.button.callback('-1', 'adjust-maxParticipants-substr-1'),
+			Markup.button.callback('-20', 'adjust-maxParticipants-subtr-20'),
+			Markup.button.callback('-5', 'adjust-maxParticipants-subtr-5'),
+			Markup.button.callback('-1', 'adjust-maxParticipants-subtr-1'),
 			Markup.button.callback('+1', 'adjust-maxParticipants-add-1'),
 			Markup.button.callback('+5', 'adjust-maxParticipants-add-5'),
 			Markup.button.callback('+20', 'adjust-maxParticipants-add-20'),
@@ -59,8 +59,8 @@ chat.action('max-participants', async ctx => {
 chat.action('max-refused', async ctx => {
 	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.maxRefused'), Markup.inlineKeyboard([
 		[
-			Markup.button.callback('-5', 'adjust-maxRefused-substr-5'),
-			Markup.button.callback('-1', 'adjust-maxRefused-substr-1'),
+			Markup.button.callback('-5', 'adjust-maxRefused-subtr-5'),
+			Markup.button.callback('-1', 'adjust-maxRefused-subtr-1'),
 			Markup.button.callback('+1', 'adjust-maxRefused-add-1'),
 			Markup.button.callback('+5', 'adjust-maxRefused-add-5'),
 		],
@@ -75,16 +75,16 @@ chat.action('max-refused', async ctx => {
 chat.action('valid-min', async ctx => {
 	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.validMin'), Markup.inlineKeyboard([
 		[
-			Markup.button.callback('-30', 'adjust-validMin-substr-30'),
-			Markup.button.callback('-5', 'adjust-validMin-substr-5'),
-			Markup.button.callback('-1', 'adjust-validMin-substr-1'),
+			Markup.button.callback('-30', 'adjust-validMin-subtr-30'),
+			Markup.button.callback('-5', 'adjust-validMin-subtr-5'),
+			Markup.button.callback('-1', 'adjust-validMin-subtr-1'),
 			Markup.button.callback('+1', 'adjust-validMin-add-1'),
 			Markup.button.callback('+5', 'adjust-validMin-add-5'),
 			Markup.button.callback('+30', 'adjust-validMin-add-30'),
 		],
 		[
-			Markup.button.callback('-1440', 'adjust-validMin-substr-1440'),
-			Markup.button.callback('-180', 'adjust-validMin-substr-180'),
+			Markup.button.callback('-1440', 'adjust-validMin-subtr-1440'),
+			Markup.button.callback('-180', 'adjust-validMin-subtr-180'),
 			Markup.button.callback('+180', 'adjust-validMin-add-180'),
 			Markup.button.callback('+1440', 'adjust-validMin-add-1440'),
 		],
@@ -110,7 +110,7 @@ chat.action(/^adjust\-maxParticipants\-(.+)/, async ctx => {
 	const action = ctx.callbackQuery.data.split('-')[2];
 	const amount = ctx.callbackQuery.data.split('-')[3];
 
-	if ((action !== 'add' && action != 'substr') || (amount != '1' && amount != '5' && amount != '20'))
+	if ((action !== 'add' && action != 'subtr') || (amount != '1' && amount != '5' && amount != '20'))
 		return ctx.answerCbQuery(ctx.i18n.t('errors.somethingWentWrong'));
 
 	if (action == 'add')
@@ -118,7 +118,7 @@ chat.action(/^adjust\-maxParticipants\-(.+)/, async ctx => {
 			(ctx.session.config.maxParticipants || await ctx.getChatMembersCount() - 1)
 			+ parseInt(amount);
 
-	if (action == 'substr') {
+	if (action == 'subtr') {
 		var possibleCurrent = ctx.session.config.maxParticipants
 			|| await ctx.getChatMembersCount() - 1;
 		if (possibleCurrent - parseInt(amount) < 2)
@@ -145,13 +145,13 @@ chat.action(/^adjust\-maxRefused\-(.+)/, async ctx => {
 	const action = ctx.callbackQuery.data.split('-')[2];
 	const amount = ctx.callbackQuery.data.split('-')[3];
 
-	if ((action !== 'add' && action != 'substr') || (amount != '1' && amount != '5'))
+	if ((action !== 'add' && action != 'subtr') || (amount != '1' && amount != '5'))
 		return ctx.answerCbQuery(ctx.i18n.t('errors.somethingWentWrong'));
 
 	if (action == 'add')
 		ctx.session.config.maxRefused = (ctx.session.config.maxRefused || 0) + parseInt(amount);
 
-	if (action == 'substr') {
+	if (action == 'subtr') {
 		if ((ctx.session.config.maxRefused || 0) - parseInt(amount) < 0)
 			return ctx.answerCbQuery(ctx.i18n.t('errors.wrongNumber'));
 		else ctx.session.config.maxRefused = (ctx.session.config.maxRefused || 0) - parseInt(amount);
@@ -175,14 +175,14 @@ chat.action(/^adjust\-validMin\-(.+)/, async ctx => {
 	const action = ctx.callbackQuery.data.split('-')[2];
 	const amount = ctx.callbackQuery.data.split('-')[3];
 
-	if ((action !== 'add' && action != 'substr') ||
+	if ((action !== 'add' && action != 'subtr') ||
 		(amount != '1' && amount != '5' && amount != '30' && amount != '180' && amount != '1440'))
 		return ctx.answerCbQuery(ctx.i18n.t('errors.somethingWentWrong'));
 
 	if (action == 'add')
 		ctx.session.config.validMin = (ctx.session.config.validMin || 0) + parseInt(amount);
 
-	if (action == 'substr') {
+	if (action == 'subtr') {
 		if ((ctx.session.config.validMin || 0) - parseInt(amount) < 1)
 			return ctx.answerCbQuery(ctx.i18n.t('errors.wrongNumber'));
 		else ctx.session.config.validMin = (ctx.session.config.validMin || 0) - parseInt(amount);
