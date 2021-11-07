@@ -75,16 +75,16 @@ chat.action('max-refused', async ctx => {
 chat.action('valid-min', async ctx => {
 	await ctx.replyWithHTML(ctx.i18n.t('group.configPrompt.validMin'), Markup.inlineKeyboard([
 		[
+			Markup.button.callback('-30', 'adjust-validMin-substr-30'),
 			Markup.button.callback('-5', 'adjust-validMin-substr-5'),
 			Markup.button.callback('-1', 'adjust-validMin-substr-1'),
 			Markup.button.callback('+1', 'adjust-validMin-add-1'),
 			Markup.button.callback('+5', 'adjust-validMin-add-5'),
+			Markup.button.callback('+30', 'adjust-validMin-add-30'),
 		],
 		[
 			Markup.button.callback('-1440', 'adjust-validMin-substr-1440'),
 			Markup.button.callback('-180', 'adjust-validMin-substr-180'),
-			Markup.button.callback('-30', 'adjust-validMin-substr-30'),
-			Markup.button.callback('+30', 'adjust-validMin-add-30'),
 			Markup.button.callback('+180', 'adjust-validMin-add-180'),
 			Markup.button.callback('+1440', 'adjust-validMin-add-1440'),
 		],
