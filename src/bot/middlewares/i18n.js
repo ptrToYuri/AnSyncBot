@@ -3,6 +3,8 @@
 const config = require('config')
 const { I18n, pluralize } = require('@grammyjs/i18n');
 
+const escape = require('../utils/escape')
+
 const i18n = new I18n({
 	defaultLanguageOnMissing: true,
 	defaultLanguage: config.get('defaultLocale'),

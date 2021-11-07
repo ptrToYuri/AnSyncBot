@@ -2,12 +2,13 @@ basic:
   yes: Да
   no: Нет
   auto: Авто
+  answerEl: "<b>${escape(author)}</b>: ${escape(answer)}"
 
 inlinePrivate:
   help: Что такое одновременные ответы?
 
 withBot:
-  start: "<b>Привет! Это - бот, позволяющий сохранять независимость позиций собеседников.</b>\n\nВсе просто: кто угодно в Вашем кругу обозначает вопрос, участники направляют боту свои ответы. Бот покажет ответы собеседников, только когда все выразят свое мнение.\n\n<b>Как пользоваться?</b>\n- ЛС: в чате с собеседником напишите @${me} и вопрос\n- Группа: добавьте бота в группу, следуйте инструкциям"
+  start: "<b>Привет! Это - бот, позволяющий сохранять независимость позиций собеседников.</b>\n\nВсе просто: кто угодно в Вашем кругу обозначает вопрос, участники направляют боту свои ответы. Бот покажет ответы собеседников, только когда все выразят свое мнение.\n\n<b>Как пользоваться?</b>\n- ЛС: в чате с собеседником напишите @${escape(me)} и вопрос\n- Группа: добавьте бота в группу, следуйте инструкциям"
   whatIsAnSync: "Бот позволяет собеседникам узнать мнение друг друга, только когда все напишут свое. Это мы называем одновременными ответами.\n\nВернуться в чат - /start"
   whyInlineUnavail: Инлайн-режим поддерживается только в личных сообщениях. Однако вы можете добавить бота в группу и пользоваться командами с продвинутой конфигурацией
   refuseButton: ❌ Отказаться отвечать
@@ -19,11 +20,11 @@ withBot:
   waitingForPartner: Спасибо за ответ. Ждем вашего собеседника
   waitingForOthers: Спасибо за ответ. Ждем остальных участников
   partnerAnswered: Ваш собеседник предоставил ответ
-  partnerRefused: Собеседник отказался отвечать на вопрос <b>"${question}"</b>. Можете вернуться в изначальный диалог
-  groupFailed: "Опрос <b>\"${question}\"</b>, в котором Вы участвовали, завершился неудачей.\n\nПричина: ${reason}"
+  partnerRefused: Собеседник отказался отвечать на вопрос <b>"${escape(question)}"</b>. Можете вернуться в изначальный диалог
+  groupFailed: "Опрос <b>\"${escape(question)}\"</b>, в котором Вы участвовали, завершился неудачей.\n\nПричина: ${reason}"
   queryResults: Запросить результаты
   queryResultsHere: Посмотреть здесь
-  seeInGroup: Результаты опроса <b>"${question}"</b> доступны в группе. ${autonl(link, 2, 0)}
+  seeInGroup: Результаты опроса <b>"${escape(question)}"</b> доступны в группе. ${autonl(link, 2, 0)}
   seeInSupergroupExtra: <a href="${href}">Перейти к итогам в группе</a>
   removeInlineKbMsg: Спасибо, что пользуетесь ботом!
 
@@ -36,12 +37,12 @@ group:
   maxRefused: Макс. отказавшихся
   isAnonymous: Анонимность
   validMin: Срок действия
-  promptEdited: "<b>\"${question}\"</b>\n\n${link}"
+  promptEdited: "<b>\"${escape(question)}\"</b>\n\n${link}"
   promptEditSucceedSupergroup: <a href="${href}">Посмотреть ответы</a>
   promptEditSucceedGroup: Ответы можно посмотреть в этом чате
   progress: "Ответили ${answered} из ${maxAnswered} (${answeredPercentage}%)\nОсталось отказов: ${refusesLeft}"
   progressExtra: "\n\n<i>Администраторы могут удалить это сообщение, если хотят скрыть прогресс</i>"
-  promptEditFailed: "<b>\"${question}\"</b>\n\nОпрос завершился неудачей"
+  promptEditFailed: "<b>\"${escape(question)}\"</b>\n\nОпрос завершился неудачей"
   failed: "Опрос завершен без подведения итогов.\n\nПричина: ${reason}"
   configPrompt:
     maxParticipants: Настройте максимальное число участников. Текущее можно увидеть в сообщении с конфигурацией
@@ -78,31 +79,31 @@ answerTypes:
     inlineDescription: Вы и собеседник сможете ответить текстом, без ограничений
     command: ask
     commandDescription: "[Текст] Развернутый ответ"
-    inlineMessage: "<b>\"${question}\"</b>\n\nНажми на кнопку ниже и кликни start, чтобы написать ответ. Когда мы оба ответим, бот сообщит нам мнения друг друга"
-    groupMessage: "<b>\"${question}\"</b>\n\nУчастников: ${maxParticipants}\nМогут отказаться: ${maxRefused}\nАнонимность: ${isAnonymous}\nОграничение по времени (мин): ${validMin}\n\n<i>Нажмите на кнопку ниже и кликните start, чтобы написать ответ. В конце я сообщу вам мнения друг друга</i>"
+    inlineMessage: "<b>\"${escape(question)}\"</b>\n\nНажми на кнопку ниже и кликни start, чтобы написать ответ. Когда мы оба ответим, бот сообщит нам мнения друг друга"
+    groupMessage: "<b>\"${escape(question)}\"</b>\n\nУчастников: ${maxParticipants}\nМогут отказаться: ${maxRefused}\nАнонимность: ${isAnonymous}\nОграничение по времени (мин): ${validMin}\n\n<i>Нажмите на кнопку ниже и кликните start, чтобы написать ответ. В конце я сообщу вам мнения друг друга</i>"
     joinButton: Написать
-    prompt: "${creator}: <b>${question}</b>\n\nПринимается текст любой длины"
-    resFromPrivate: "Ответ получен. После прочтения можете вернуться в ваш чат.\n\n<b>${question}</b>"
+    prompt: "${escape(creator)}: <b>${escape(question)}</b>\n\nПринимается текст любой длины"
+    resFromPrivate: "Ответ получен. После прочтения можете вернуться в ваш чат.\n\n<b>${escape(question)}</b>"
     resToGroup: "Результаты:\n\n${data}"
-    explore: "<u>${creator}: <b>${question}</b></u>\n\n${data}"
+    explore: "<u>${escape(creator)}: <b>${escape(question)}</b></u>\n\n${data}"
   score:
     inlineTitle: Десятибалльная шкала
     inlineDescription: Вы и собеседник оцените что-то по 10-балльной шкале
     command: score
     commandDescription: "[Текст] Оценка по десятибалльной шкале"
-    inlineMessage: "<b>\"${question}\"</b>\n\nНажми на кнопку и кликни start, чтобы выразить оценку по 10-балльной шкале. Когда мы оба отправим свой вариант, бот сообщит нам оценки друг друга"
-    groupMessage: "<b>\"${question}\"</b>\n\nУчастников: ${maxParticipants}\nМогут отказаться: ${maxRefused}\nАнонимность: ${isAnonymous}\nОграничение по времени (мин): ${validMin}\n\n<i>Нажмите на кнопку ниже и кликните start, чтобы написать ответ. В конце я сообщу вам мнения друг друга</i>" 
+    inlineMessage: "<b>\"${escape(question)}\"</b>\n\nНажми на кнопку и кликни start, чтобы выразить оценку по 10-балльной шкале. Когда мы оба отправим свой вариант, бот сообщит нам оценки друг друга"
+    groupMessage: "<b>\"${escape(question)}\"</b>\n\nУчастников: ${maxParticipants}\nМогут отказаться: ${maxRefused}\nАнонимность: ${isAnonymous}\nОграничение по времени (мин): ${validMin}\n\n<i>Нажмите на кнопку ниже и кликните start, чтобы оценить предмет разговора по десятибалльной шкале. В конце я сообщу вам мнения друг друга</i>" 
     joinButton: Оценить
-    promptMsg1: "${creator}: <b>${question}</b>"
-    promptMsg2: "${from.first_name}, какова Ваша оценка? Выберите ответ кнопками ниже"
-    resFromPrivate: "Оценки получены. Можете вернуться в ваш чат.\n\n<b>${question}</b>\n\n${data}"
-    resToGroup: "<u>${creator}: <b>${question}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
-    explore: "<u>${creator}: <b>${question}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
+    promptMsg1: "${escape(creator)}: <b>${escape(question)}</b>"
+    promptMsg2: "${escape(from.first_name)}, какова Ваша оценка? Выберите ответ кнопками ниже"
+    resFromPrivate: "Оценки получены. Можете вернуться в ваш чат.\n\n<b>${escape(question)}</b>\n\n${data}"
+    resToGroup: "<u>${escape(creator)}: <b>${escape(question)}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
+    explore: "<u>${escape(creator)}: <b>${escape(question)}</b></u>\n\nПолучено ${answersCount} ответов.\n\nСредняя оценка: <b>${average}</b>\nМедианная оценка: <b>${median}</b>${autonl(data,2,0)}"
   emoji:
     inlineTitle: Эмодзи
     inlineDescription: Вы и собеседник выразите отношение к предмету разговора одним смайликом
     command: emoji
     commandDescription: "[Текст] Оценка одним эмодзи"
-    inlineMessage: "<b>\"${question}\"</b>\n\nНажми на кнопку и кликни start, а затем выбери смайлик, характеризующий представленное. Когда мы оба отправим свой вариант, бот перешлет нам смайлики друг друга"
+    inlineMessage: "<b>\"${escape(question)}\"</b>\n\nНажми на кнопку и кликни start, а затем выбери смайлик, характеризующий представленное. Когда мы оба отправим свой вариант, бот перешлет нам смайлики друг друга"
     joinButton: Оценить
-    prompt: "${creator}: <b>${question}</b>\n\nОтправьте любое эмодзи (смайлик)"
+    prompt: "${escape(creator)}: <b>${escape(question)}</b>\n\nОтправьте любое эмодзи (смайлик)"

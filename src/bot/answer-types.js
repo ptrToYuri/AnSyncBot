@@ -47,8 +47,8 @@ module.exports = [
 			const text = snCtx.t('answerTypes.verbose.resToGroup', {
 				creator: interchange.creatorFriendlyName,
 				question: interchange.question.toUpperCase(),
-				data: interchange.answers.map(el =>
-					`${el.userFriendlyName}: ${el.messageContent.replace(/\n/g, ' ').trim()}`).join('\n\n')
+				data: interchange.answers.map(el => tAnswerEl(false,
+					el.userFriendlyName, el.messageContent, snCtx)).join('\n\n')
 			});
 			return (await sendChunked(text, interchange.groupData.id, bot, {
 				extraFirst: {
@@ -91,9 +91,8 @@ module.exports = [
 		sendResultsFromPrivate: async (interchange, userId, bot, snCtx, shouldRemoveKb) => {
 			await bot.telegram.sendMessage(userId, snCtx.t(`answerTypes.score.resFromPrivate`, {
 				question: interchange.question.toUpperCase(),
-				data: interchange.answers.map(el =>
-					`${userId == el.userId ? snCtx.t('withBot.self') : el.userFriendlyName
-					}: <b>${el.messageContent}/10</b>`).join('\n')
+				data: interchange.answers.map(el => tAnswerEl(userId == el.userId,
+					el.userFriendlyName, `${el.messageContent}/10`, snCtx)).join('\n')
 			}),
 				{
 					parse_mode: 'HTML',
@@ -108,8 +107,8 @@ module.exports = [
 				median: Math.round(median(interchange.answers.map(el => el.messageContent)) * 10) / 10,
 				average: Math.round(average(interchange.answers.map(el => el.messageContent)) * 10) / 10,
 				data: !interchange.isAnonymous
-					? interchange.answers.map(el =>
-						`${el.userFriendlyName}: <b>${el.messageContent}/10</b>`).join('\n')
+					? interchange.answers.map(el => tAnswerEl(false,
+						el.userFriendlyName, `${el.messageContent}/10`, snCtx)).join('\n')
 					: ''
 			});
 			return (await sendChunked(text, interchange.groupData.id, bot, {
@@ -127,9 +126,8 @@ module.exports = [
 				median: Math.round(median(interchange.answers.map(el => el.messageContent)) * 10) / 10,
 				average: Math.round(average(interchange.answers.map(el => el.messageContent)) * 10) / 10,
 				data: !interchange.isAnonymous
-					? interchange.answers.map(el =>
-						`${ctx.from.id == el.userId ? ctx.i18n.t('withBot.self') : el.userFriendlyName
-						}: <b>${el.messageContent}/10</b>`).join('\n')
+					? interchange.answers.map(el => tAnswerEl(ctx.from.id == el.userId,
+						el.userFriendlyName, `${el.messageContent}/10`, ctx.i18n)).join('\n')
 					: ''
 			});
 			await sendChunked(text, ctx.from.id, ctx, {
@@ -145,6 +143,13 @@ module.exports = [
 		}	*/
 
 ]
+
+function tAnswerEl(isSelf, author, answer, i18n) {
+	return i18n.t('basic.answerEl', {
+		author: isSelf ? i18n.t('withBot.self') : author,
+		answer: answer.replace(/\n/g, ' ').trim()
+	});
+}
 
 async function sendChunked(text, chatId, bot, { extraFirst, extraLast }) {
 	const chunks = chunk(text, 4096);
@@ -177,9 +182,8 @@ async function genericExplore(ctx, interchange) {
 			creator: ctx.chat.id == interchange.creatorId ?
 				ctx.i18n.t('withBot.self') : interchange.creatorFriendlyName,
 			question: interchange.question.toUpperCase(),
-			data: interchange.answers.map(el =>
-				`${ctx.from.id == el.userId ? ctx.i18n.t('withBot.self') : el.userFriendlyName
-				}: ${el.messageContent.replace(/\n/g, ' ').trim()}`).join('\n\n')
+			data: interchange.answers.map(el => tAnswerEl(ctx.from.id == el.userId,
+				el.userFriendlyName, el.messageContent, ctx.i18n)).join('\n\n')
 		});
 	await sendChunked(text, ctx.chat.id, ctx, {
 		extraFirst: {
