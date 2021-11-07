@@ -2,6 +2,7 @@
 
 const { Markup } = require('telegraf');
 const chunk = require('chunk-text');
+const emojis = require('emojis-list')
 
 const median = require('compute-median');
 const average = require('average');
@@ -39,14 +40,12 @@ module.exports = [
 		name: 'verbose',
 		prompt: genericPrompt,
 		getResponse: async ctx => {
-			if (ctx.message.text) return ctx.message.text;
+			if (ctx.message?.text) return ctx.message.text;
 			else await ctx.replyWithHTML(ctx.i18n.t('errors.notText'));
 		},
 		sendResultsFromPrivate: genericForwardFromPrivate,
 		sendResultsToGroup: async (interchange, bot, snCtx) => {
 			const text = snCtx.t('answerTypes.verbose.resToGroup', {
-				creator: interchange.creatorFriendlyName,
-				question: interchange.question.toUpperCase(),
 				data: interchange.answers.map(el => tAnswerEl(false,
 					el.userFriendlyName, el.messageContent, snCtx)).join('\n\n')
 			});
@@ -138,9 +137,44 @@ module.exports = [
 		}
 	},
 
-	/*	{
-			name: 'emoji'
-		}	*/
+	{
+		name: 'emoji',
+		prompt: genericPrompt,
+		getResponse: async ctx => {
+			if (emojis.includes(ctx.message?.text)) return ctx.message.text;
+			else await ctx.replyWithHTML(ctx.i18n.t('errors.notEmoji'));
+		},
+		sendResultsFromPrivate: genericForwardFromPrivate,
+		sendResultsToGroup: async (interchange, bot, snCtx) => {
+			const text = snCtx.t('answerTypes.emoji.resToGroup', {
+				data: !interchange.isAnonymous
+					? interchange.answers.map(el => tAnswerEl(false,
+						el.userFriendlyName, el.messageContent, snCtx)).join('\n')
+					: interchange.answers.map(el => el.messageContent).join('')
+			});
+			return (await sendChunked(text, interchange.groupData.id, bot, {
+				extraFirst: {
+					reply_to_message_id: interchange.groupData.promptMessageId,
+					allow_sending_without_reply: true
+				}
+			}))[0]
+		},
+		explore: async (ctx, interchange) => {
+			const text = ctx.i18n.t('answerTypes.emoji.explore', {
+				creator: interchange.creatorFriendlyName,
+				question: interchange.question.toUpperCase(),
+				data: !interchange.isAnonymous
+					? interchange.answers.map(el => tAnswerEl(false,
+						el.userFriendlyName, el.messageContent, ctx.i18n)).join('\n')
+					: interchange.answers.map(el => el.messageContent).join('')
+			});
+			await sendChunked(text, ctx.from.id, ctx, {
+				extraFirst: {
+					reply_markup: Markup.removeKeyboard()
+				}
+			})
+		}
+	}
 
 ]
 

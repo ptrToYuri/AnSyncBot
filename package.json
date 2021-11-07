@@ -24,6 +24,7 @@
     "chunk-text": "^2.0.1",
     "compute-median": "^2.0.0",
     "config": "^3.3.6",
+    "emojis-list": "^3.0.0",
     "log-timestamp": "^0.3.0",
     "mongoose": "^6.0.12",
     "shuffle-array": "^1.0.1",
