@@ -13,6 +13,12 @@ const chat = new Composer();
 
 chat.use(conf.middleware);
 
+chat.on('my_chat_member', ctx => {
+	if (ctx.myChatMember.new_chat_member?.status == 'member' &&
+		ctx.myChatMember.new_chat_member?.user?.id == ctx.botInfo.id)
+		return ctx.replyWithHTML(ctx.i18n.t('group.welcome'));
+})
+
 chat.use(async ctx => {
 	for (let answerType of answerTypes) {
 		if (ctx.message?.text?.startsWith('/' + ctx.i18n.t(`answerTypes.${answerType.name}.command`)) &&		// scene reset via start command
@@ -96,11 +102,5 @@ function getQuestion(ctx) {
 	if (!question) throw new OpError('errors.emptyCommand');
 	return question;
 }
-
-chat.on('my_chat_member', ctx => {
-	if (ctx.myChatMember.new_chat_member?.status == 'member' &&
-		ctx.myChatMember.new_chat_member?.user?.id == ctx.botInfo.id)
-		return ctx.replyWithHTML(ctx.i18n.t('group.welcome'));
-})
 
 module.exports = chat;
