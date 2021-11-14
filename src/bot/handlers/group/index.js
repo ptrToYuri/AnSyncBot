@@ -6,7 +6,7 @@ const OpError = require(`${__base}/utils/op-error`);
 const conf = require('./config')
 const genSecret = require(`${__base}/utils/secret-generator`);
 const answerTypes = require(`${__base}/bot/answer-types`);
-const sessionNoCtx = require(`${__base}/bot/utils/session-noctx`);
+const sessionNoCtx = require(`${__base}/bot/utils/session-noctx`).SessionNoCtx;
 const interchanges = require(`${__base}/controllers/interchanges`);
 const subscriptions = require(`${__base}/controllers/subscriptions`);
 
@@ -19,7 +19,7 @@ chat.on('migrate_from_chat_id', async ctx => {
 	await Promise.all([
 		interchanges.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id),
 		subscriptions.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id),
-		sessionNoCtx.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id)
+		(async () => { ctx.session.config = (await sessionNoCtx.load(ctx.message.migrate_from_chat_id, 'group-')).session?.config })()
 	]);
 	console.log('[GROUP] Migration succeed');
 })
