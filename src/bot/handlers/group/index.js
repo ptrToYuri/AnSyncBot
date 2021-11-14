@@ -6,12 +6,23 @@ const OpError = require(`${__base}/utils/op-error`);
 const conf = require('./config')
 const genSecret = require(`${__base}/utils/secret-generator`);
 const answerTypes = require(`${__base}/bot/answer-types`);
+const sessionNoCtx = require(`${__base}/bot/utils/session-noctx`);
 const interchanges = require(`${__base}/controllers/interchanges`);
 const subscriptions = require(`${__base}/controllers/subscriptions`);
 
 const chat = new Composer();
 
 chat.use(conf.middleware);
+
+chat.on('migrate_from_chat_id', async ctx => {
+	console.log(`[GROUP] Chat ${ctx.message.migrate_from_chat_id} migrated to supergroup ${ctx.chat.id}`);
+	await Promise.all([
+		interchanges.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id),
+		subscriptions.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id),
+		sessionNoCtx.migrateToSupergroup(ctx.message.migrate_from_chat_id, ctx.chat.id)
+	]);
+	console.log('[GROUP] Migration succeed');
+})
 
 chat.on('my_chat_member', ctx => {
 	if (ctx.myChatMember.new_chat_member?.status == 'member' &&

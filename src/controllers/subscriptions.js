@@ -53,7 +53,21 @@ async function deregisterExceptFor(interchangeId, excludedChatIds) {
 		} for users except ${excludedChatIds.length ? excludedChatIds : 'none'}`);
 }
 
+
+async function migrateToSupergroup(oldId, newId) {
+	await subscriptions.updateMany(
+		{
+			isGroup: true,
+			chatId: oldId
+		},
+		{
+			chatId: newId
+		}
+	);
+	console.log(`[SUBSCR] Chat ${oldId} migrated to ${newId}`);
+}
+
 module.exports = {
-	register, process, deregisterExceptFor,
+	register, process, deregisterExceptFor, migrateToSupergroup,
 	events
 }

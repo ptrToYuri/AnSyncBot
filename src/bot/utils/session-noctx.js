@@ -19,8 +19,15 @@ class SessionNoCtx {
 	}
 }
 
+async function migrateToSupergroup(oldId, newId) {
+	const data = (await sessions.findOne({ key: `group-${oldId}` })).toObject()?.data || {};
+	await sessions.updateOne({ key: `group-${newId}` }, { data: data }, { upsert: true })
+	console.log(`[SNCTX] Configuration migrated from ${oldId} to ${newId}`);
+}
+
 var i18n;
 module.exports = {
 	init: (bot, _i18n) => { i18n = _i18n; return this },
-	SessionNoCtx
+	SessionNoCtx,
+	migrateToSupergroup
 }

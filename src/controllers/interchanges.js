@@ -165,8 +165,25 @@ async function invalidateTimedOut() {
 	} while (interchange);
 }
 
+async function migrateToSupergroup(oldId, newId) {
+	await questions.updateMany(
+		{
+			'groupData.id': oldId
+		},
+		{
+			groupData: {
+				id: newId,
+				supportsMessageLinks: true,
+				promptMessageId: -1
+			}
+		}
+	);
+	console.log(`[INTCNG] Chat ${oldId} migrated to ${newId}`);
+}
+
 module.exports = {
 	create,
 	getByInvitation, get, getWithAnswers, alreadyAnswered,
-	submitAnswer, invalidateTimedOut
+	submitAnswer, invalidateTimedOut,
+	migrateToSupergroup
 }
