@@ -56,7 +56,10 @@ chat.start(async ctx => {
 		ctx.session.kbLazyRemoveId = String(interchange._id);
 	}
 	else return ctx.replyWithHTML(ctx.i18n.t(`withBot.start`, { me: ctx.botInfo.username }),
-		Markup.inlineKeyboard([[Markup.button.switchToChat(ctx.i18n.t('withBot.tryInPrivate'), '')]]))
+		Markup.inlineKeyboard([
+			[Markup.button.switchToChat(ctx.i18n.t('withBot.tryInPrivate'), '')],
+			[Markup.button.url(ctx.i18n.t('withBot.addToGroup'), `t.me/${ctx.botInfo.username}?startgroup=1`)]
+		]))
 });
 
 chat.hears(match('withBot.refuseButton'), async ctx => {
